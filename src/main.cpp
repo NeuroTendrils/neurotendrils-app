@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     ThemeManager themeManager;
     themeManager.attach(&app);
 
-    MainWindow window;
+    MainWindow window(themeManager);
     window.show();
 
     return app.exec();

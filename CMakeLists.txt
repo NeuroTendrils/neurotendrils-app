@@ -14,9 +14,11 @@ qt_add_executable(neurotendrils-app
     src/main.cpp
     src/theme/ColorPalette.cpp
     src/theme/ThemeManager.cpp
+    src/ui/HomePage.cpp
     src/ui/MainWindow.cpp
     include/theme/ColorPalette.h
     include/theme/ThemeManager.h
+    include/ui/HomePage.h
     include/ui/MainWindow.h
 )
 

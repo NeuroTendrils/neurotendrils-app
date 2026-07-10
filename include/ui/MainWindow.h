@@ -2,9 +2,15 @@
 
 #include <QMainWindow>
 
+class HomePage;
+class ThemeManager;
+
 class MainWindow final : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(ThemeManager& themeManager, QWidget* parent = nullptr);
+
+private:
+    HomePage* homePage_ = nullptr;
 };
