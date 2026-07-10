@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QLabel;
+class QPushButton;
 class ThemeManager;
 
 class HomePage final : public QWidget {
@@ -17,10 +18,14 @@ private slots:
 private:
     void buildUi();
     void updateWordmarkFont();
+    QString navButtonStylesheet() const;
 
     void resizeEvent(QResizeEvent* event) override;
 
     ThemeManager& themeManager_;
     QLabel* neuroLabel_ = nullptr;
     QLabel* tendrilsLabel_ = nullptr;
+    QPushButton* roboticArmButton_ = nullptr;
+    QPushButton* eegToTextButton_ = nullptr;
+    QPushButton* educationButton_ = nullptr;
 };

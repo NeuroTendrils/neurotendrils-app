@@ -6,13 +6,28 @@
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QResizeEvent>
 #include <QVBoxLayout>
+#include <QtGlobal>
 
 namespace {
 
-constexpr int kWordmarkMinPointSize = 40;
-constexpr int kWordmarkMaxPointSize = 80;
+constexpr int kWordmarkMinPointSize = 56;
+constexpr int kWordmarkMaxPointSize = 120;
+constexpr int kNavButtonWidth = 320;
+constexpr int kNavButtonHeight = 56;
+constexpr int kNavButtonSpacing = 16;
+
+constexpr int kWordmarkToButtonsSpacing = 48;
+
+QPushButton* createNavButton(const QString& label, QWidget* parent) {
+    auto* button = new QPushButton(label, parent);
+    button->setObjectName(QStringLiteral("nav-button"));
+    button->setFixedSize(kNavButtonWidth, kNavButtonHeight);
+    button->setCursor(Qt::PointingHandCursor);
+    return button;
+}
 
 } // namespace
 
@@ -28,10 +43,10 @@ HomePage::HomePage(ThemeManager& themeManager, QWidget* parent)
 
 void HomePage::buildUi() {
     auto* rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setContentsMargins(48, 48, 48, 64);
     rootLayout->setSpacing(0);
 
-    rootLayout->addStretch(1);
+    rootLayout->addStretch(4);
 
     auto* wordmarkRow = new QHBoxLayout();
     wordmarkRow->setSpacing(0);
@@ -48,7 +63,27 @@ void HomePage::buildUi() {
     wordmarkRow->addStretch();
 
     rootLayout->addLayout(wordmarkRow);
-    rootLayout->addStretch(6);
+    rootLayout->addSpacing(kWordmarkToButtonsSpacing);
+    rootLayout->addStretch(3);
+
+    auto* buttonColumn = new QVBoxLayout();
+    buttonColumn->setSpacing(kNavButtonSpacing);
+    buttonColumn->setAlignment(Qt::AlignHCenter);
+
+    roboticArmButton_ = createNavButton(QStringLiteral("Robotic Arm"), this);
+    eegToTextButton_ = createNavButton(QStringLiteral("EEG-to-Text"), this);
+    educationButton_ = createNavButton(QStringLiteral("Education"), this);
+
+    roboticArmButton_->setToolTip(QStringLiteral("Coming soon"));
+    eegToTextButton_->setToolTip(QStringLiteral("Coming soon"));
+    educationButton_->setToolTip(QStringLiteral("Coming soon"));
+
+    buttonColumn->addWidget(roboticArmButton_, 0, Qt::AlignHCenter);
+    buttonColumn->addWidget(eegToTextButton_, 0, Qt::AlignHCenter);
+    buttonColumn->addWidget(educationButton_, 0, Qt::AlignHCenter);
+
+    rootLayout->addLayout(buttonColumn);
+    rootLayout->addStretch(4);
 }
 
 void HomePage::applyTheme() {
@@ -66,14 +101,62 @@ void HomePage::applyTheme() {
         tendrilsLabel_->setStyleSheet(QStringLiteral("color: %1; background: transparent;")
             .arg(colors.foreground.name(QColor::HexRgb)));
     }
+
+    const QString buttonStyle = navButtonStylesheet();
+    if (roboticArmButton_ != nullptr) {
+        roboticArmButton_->setStyleSheet(buttonStyle);
+    }
+    if (eegToTextButton_ != nullptr) {
+        eegToTextButton_->setStyleSheet(buttonStyle);
+    }
+    if (educationButton_ != nullptr) {
+        educationButton_->setStyleSheet(buttonStyle);
+    }
+}
+
+QString HomePage::navButtonStylesheet() const {
+    const ColorPalette colors = themeManager_.palette();
+    const QString elevated = colors.backgroundElevated.name(QColor::HexRgb);
+    const QString foreground = colors.foreground.name(QColor::HexRgb);
+    const QString border = colors.border.name(QColor::HexArgb);
+    const QString accent = colors.accent.name(QColor::HexRgb);
+    const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
+    const QString accentStrong = colors.accentStrong.name(QColor::HexRgb);
+
+    return QStringLiteral(
+               "QPushButton#nav-button {"
+               "  background-color: %1;"
+               "  color: %2;"
+               "  border: 1px solid %3;"
+               "  border-radius: 10px;"
+               "  font-weight: 500;"
+               "  font-size: 16px;"
+               "  padding: 0 20px;"
+               "}"
+               "QPushButton#nav-button:hover {"
+               "  background-color: %4;"
+               "  border-color: %5;"
+               "  color: %5;"
+               "}"
+               "QPushButton#nav-button:pressed {"
+               "  background-color: %4;"
+               "  border-color: %6;"
+               "  color: %6;"
+               "}"
+               "QPushButton#nav-button:focus {"
+               "  outline: none;"
+               "}")
+        .arg(elevated, foreground, border, accentSubtle, accent, accentStrong);
 }
 
 void HomePage::updateWordmarkFont() {
+    const int scaleBasis = qMin(width(), height());
+    const int scaledSize = qBound(kWordmarkMinPointSize, scaleBasis / 8, kWordmarkMaxPointSize);
+
     QFont wordmarkFont = font();
-    const int scaledSize = qBound(kWordmarkMinPointSize, width() / 16, kWordmarkMaxPointSize);
     wordmarkFont.setPointSize(scaledSize);
     wordmarkFont.setWeight(QFont::DemiBold);
-    wordmarkFont.setLetterSpacing(QFont::AbsoluteSpacing, -2.0);
+    wordmarkFont.setLetterSpacing(QFont::AbsoluteSpacing, scaledSize * -0.035);
 
     if (neuroLabel_ != nullptr) {
         neuroLabel_->setFont(wordmarkFont);
