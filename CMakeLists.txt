@@ -13,13 +13,9 @@ set(NT_QT_COMPONENTS Widgets Network Quick Quick3D QuickWidgets)
 
 if(DEFINED ENV{QT_ROOT_DIR})
     list(PREPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
-    find_package(Qt6 6.8 REQUIRED COMPONENTS ${NT_QT_COMPONENTS}
-        PATHS "$ENV{QT_ROOT_DIR}/lib/cmake/Qt6"
-        NO_DEFAULT_PATH
-    )
-else()
-    find_package(Qt6 6.8 REQUIRED COMPONENTS ${NT_QT_COMPONENTS})
 endif()
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS ${NT_QT_COMPONENTS})
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/StripLegacyAgl.cmake")
 nt_strip_legacy_agl()
