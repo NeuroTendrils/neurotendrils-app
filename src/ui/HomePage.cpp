@@ -1,8 +1,8 @@
-#include "ui/HomePage.h"
+#include "ui/HomePage.hpp"
 
-#include "theme/AppFonts.h"
-#include "theme/ColorPalette.h"
-#include "theme/ThemeManager.h"
+#include "theme/AppFonts.hpp"
+#include "theme/ColorPalette.hpp"
+#include "theme/ThemeManager.hpp"
 
 #include <QFont>
 #include <QHBoxLayout>

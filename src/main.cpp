@@ -1,6 +1,6 @@
-#include "theme/AppFonts.h"
-#include "theme/ThemeManager.h"
-#include "ui/MainWindow.h"
+#include "theme/AppFonts.hpp"
+#include "theme/ThemeManager.hpp"
+#include "ui/MainWindow.hpp"
 
 #include <QApplication>
 

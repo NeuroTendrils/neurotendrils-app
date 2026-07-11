@@ -1,9 +1,9 @@
-#include "ui/SettingsOverlay.h"
+#include "ui/SettingsOverlay.hpp"
 
-#include "AppVersion.h"
-#include "theme/AppFonts.h"
-#include "theme/ColorPalette.h"
-#include "theme/ThemeManager.h"
+#include "AppVersion.hpp"
+#include "theme/AppFonts.hpp"
+#include "theme/ColorPalette.hpp"
+#include "theme/ThemeManager.hpp"
 
 #include <QButtonGroup>
 #include <QDesktopServices>

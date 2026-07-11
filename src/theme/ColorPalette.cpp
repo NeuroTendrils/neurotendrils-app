@@ -1,4 +1,4 @@
-#include "theme/ColorPalette.h"
+#include "theme/ColorPalette.hpp"
 
 ColorPalette ColorPalette::forTheme(Theme theme) {
     ColorPalette palette;

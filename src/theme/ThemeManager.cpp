@@ -1,4 +1,4 @@
-#include "theme/ThemeManager.h"
+#include "theme/ThemeManager.hpp"
 
 #include <QtGlobal>
 

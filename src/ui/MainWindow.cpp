@@ -1,10 +1,10 @@
-#include "ui/MainWindow.h"
+#include "ui/MainWindow.hpp"
 
-#include "theme/ColorPalette.h"
-#include "theme/ThemeManager.h"
-#include "ui/HomePage.h"
-#include "ui/SettingsMenu.h"
-#include "ui/SettingsOverlay.h"
+#include "theme/ColorPalette.hpp"
+#include "theme/ThemeManager.hpp"
+#include "ui/HomePage.hpp"
+#include "ui/SettingsMenu.hpp"
+#include "ui/SettingsOverlay.hpp"
 
 #include <QHBoxLayout>
 #include <QResizeEvent>

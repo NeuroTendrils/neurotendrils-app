@@ -1,4 +1,4 @@
-#include "theme/AppFonts.h"
+#include "theme/AppFonts.hpp"
 
 #include <QApplication>
 #include <QFontDatabase>

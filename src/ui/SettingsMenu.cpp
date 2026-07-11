@@ -1,9 +1,9 @@
-#include "ui/SettingsMenu.h"
+#include "ui/SettingsMenu.hpp"
 
-#include "theme/AppFonts.h"
-#include "theme/ColorPalette.h"
-#include "theme/ThemeManager.h"
-#include "ui/SettingsOverlay.h"
+#include "theme/AppFonts.hpp"
+#include "theme/ColorPalette.hpp"
+#include "theme/ThemeManager.hpp"
+#include "ui/SettingsOverlay.hpp"
 
 #include <QHBoxLayout>
 #include <QPushButton>

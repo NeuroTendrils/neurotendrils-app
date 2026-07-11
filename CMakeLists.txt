@@ -32,13 +32,13 @@ qt_add_executable(neurotendrils-app
     src/ui/MainWindow.cpp
     src/ui/SettingsMenu.cpp
     src/ui/SettingsOverlay.cpp
-    include/theme/ColorPalette.h
-    include/theme/ThemeManager.h
-    include/theme/AppFonts.h
-    include/ui/HomePage.h
-    include/ui/MainWindow.h
-    include/ui/SettingsMenu.h
-    include/ui/SettingsOverlay.h
+    include/theme/ColorPalette.hpp
+    include/theme/ThemeManager.hpp
+    include/theme/AppFonts.hpp
+    include/ui/HomePage.hpp
+    include/ui/MainWindow.hpp
+    include/ui/SettingsMenu.hpp
+    include/ui/SettingsOverlay.hpp
     resources/resources.qrc
 )
 

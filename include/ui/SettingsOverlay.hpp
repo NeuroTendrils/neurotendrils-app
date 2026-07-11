@@ -1,6 +1,6 @@
 #pragma once
 
-#include "theme/ColorPalette.h"
+#include "theme/ColorPalette.hpp"
 
 #include <QWidget>
 
