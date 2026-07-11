@@ -1,5 +1,6 @@
 #include "ui/HomePage.h"
 
+#include "theme/AppFonts.h"
 #include "theme/ColorPalette.h"
 #include "theme/ThemeManager.h"
 
@@ -34,6 +35,8 @@ QPushButton* createNavButton(const QString& label, QWidget* parent) {
 HomePage::HomePage(ThemeManager& themeManager, QWidget* parent)
     : QWidget(parent)
     , themeManager_(themeManager) {
+    setObjectName(QStringLiteral("home-page"));
+    setAttribute(Qt::WA_StyledBackground, true);
     buildUi();
     applyTheme();
     updateWordmarkFont();
@@ -90,7 +93,7 @@ void HomePage::applyTheme() {
     const ColorPalette colors = themeManager_.palette();
     const QString background = colors.background.name(QColor::HexRgb);
 
-    setStyleSheet(QStringLiteral("QWidget { background-color: %1; }").arg(background));
+    setStyleSheet(QStringLiteral("QWidget#home-page { background-color: %1; }").arg(background));
 
     if (neuroLabel_ != nullptr) {
         neuroLabel_->setStyleSheet(QStringLiteral("color: %1; background: transparent;")
@@ -129,7 +132,7 @@ QString HomePage::navButtonStylesheet() const {
                "  color: %2;"
                "  border: 1px solid %3;"
                "  border-radius: 10px;"
-               "  font-weight: 500;"
+               "  font-weight: 600;"
                "  font-size: 16px;"
                "  padding: 0 20px;"
                "}"
@@ -153,9 +156,7 @@ void HomePage::updateWordmarkFont() {
     const int scaleBasis = qMin(width(), height());
     const int scaledSize = qBound(kWordmarkMinPointSize, scaleBasis / 8, kWordmarkMaxPointSize);
 
-    QFont wordmarkFont = font();
-    wordmarkFont.setPointSize(scaledSize);
-    wordmarkFont.setWeight(QFont::DemiBold);
+    QFont wordmarkFont = AppFonts::semibold(scaledSize);
     wordmarkFont.setLetterSpacing(QFont::AbsoluteSpacing, scaledSize * -0.035);
 
     if (neuroLabel_ != nullptr) {

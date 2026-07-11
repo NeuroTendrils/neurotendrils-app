@@ -1,3 +1,4 @@
+#include "theme/AppFonts.h"
 #include "theme/ThemeManager.h"
 #include "ui/MainWindow.h"
 
@@ -8,6 +9,8 @@ int main(int argc, char* argv[]) {
     app.setApplicationName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationDomain(QStringLiteral("neurotendrils.com"));
+
+    AppFonts::initialize(app);
 
     ThemeManager themeManager;
     themeManager.attach(&app);

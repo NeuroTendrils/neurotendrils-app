@@ -7,19 +7,27 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets)
 
 qt_add_executable(neurotendrils-app
     src/main.cpp
     src/theme/ColorPalette.cpp
     src/theme/ThemeManager.cpp
+    src/theme/AppFonts.cpp
     src/ui/HomePage.cpp
     src/ui/MainWindow.cpp
+    src/ui/SettingsMenu.cpp
+    src/ui/SettingsOverlay.cpp
     include/theme/ColorPalette.h
     include/theme/ThemeManager.h
+    include/theme/AppFonts.h
     include/ui/HomePage.h
     include/ui/MainWindow.h
+    include/ui/SettingsMenu.h
+    include/ui/SettingsOverlay.h
+    resources/resources.qrc
 )
 
 target_link_libraries(neurotendrils-app PRIVATE Qt6::Widgets)

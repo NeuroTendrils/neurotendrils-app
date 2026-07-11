@@ -8,7 +8,16 @@
 namespace {
 
 QString themeToString(Theme theme) {
-    return theme == Theme::Light ? QStringLiteral("light") : QStringLiteral("dark");
+    switch (theme) {
+    case Theme::Light:
+        return QStringLiteral("light");
+    case Theme::Dark:
+        return QStringLiteral("dark");
+    case Theme::Auto:
+        return QStringLiteral("auto");
+    }
+
+    return QStringLiteral("auto");
 }
 
 Theme themeFromString(const QString& value) {
@@ -18,6 +27,27 @@ Theme themeFromString(const QString& value) {
     if (value == QStringLiteral("dark")) {
         return Theme::Dark;
     }
+    if (value == QStringLiteral("auto")) {
+        return Theme::Auto;
+    }
+
+    return Theme::Auto;
+}
+
+Theme systemTheme(QStyleHints* hints) {
+    if (hints == nullptr) {
+        return Theme::Dark;
+    }
+
+    switch (hints->colorScheme()) {
+    case Qt::ColorScheme::Light:
+        return Theme::Light;
+    case Qt::ColorScheme::Dark:
+        return Theme::Dark;
+    case Qt::ColorScheme::Unknown:
+        break;
+    }
+
     return Theme::Dark;
 }
 
@@ -30,14 +60,31 @@ void ThemeManager::attach(QApplication* app) {
     app_ = app;
     theme_ = resolveInitialTheme();
     applyTheme();
+
+    connect(app_->styleHints(), &QStyleHints::colorSchemeChanged, this, [this]() {
+        if (theme_ != Theme::Auto) {
+            return;
+        }
+
+        applyTheme();
+        emit themeChanged(theme_);
+    });
 }
 
 Theme ThemeManager::currentTheme() const {
     return theme_;
 }
 
+Theme ThemeManager::effectiveTheme() const {
+    if (theme_ == Theme::Light || theme_ == Theme::Dark) {
+        return theme_;
+    }
+
+    return systemTheme(app_ != nullptr ? app_->styleHints() : nullptr);
+}
+
 ColorPalette ThemeManager::palette() const {
-    return ColorPalette::forTheme(theme_);
+    return ColorPalette::forTheme(effectiveTheme());
 }
 
 void ThemeManager::setTheme(Theme theme) {
@@ -58,18 +105,7 @@ Theme ThemeManager::resolveInitialTheme() {
         return themeFromString(stored);
     }
 
-    if (qApp != nullptr) {
-        switch (qApp->styleHints()->colorScheme()) {
-        case Qt::ColorScheme::Light:
-            return Theme::Light;
-        case Qt::ColorScheme::Dark:
-            return Theme::Dark;
-        case Qt::ColorScheme::Unknown:
-            break;
-        }
-    }
-
-    return Theme::Dark;
+    return Theme::Auto;
 }
 
 void ThemeManager::applyTheme() {
@@ -77,7 +113,21 @@ void ThemeManager::applyTheme() {
         return;
     }
 
-    const ColorPalette colors = palette();
+    QStyleHints* hints = app_->styleHints();
+
+    // Release the app back to the OS preference before reading it. A prior
+    // Light/Dark selection calls setColorScheme(), which would otherwise make
+    // colorScheme() return the last manual choice instead of the system one.
+    if (theme_ == Theme::Auto) {
+        hints->setColorScheme(Qt::ColorScheme::Unknown);
+    } else if (theme_ == Theme::Dark) {
+        hints->setColorScheme(Qt::ColorScheme::Dark);
+    } else {
+        hints->setColorScheme(Qt::ColorScheme::Light);
+    }
+
+    const Theme effective = systemTheme(hints);
+    const ColorPalette colors = ColorPalette::forTheme(effective);
 
     QPalette widgetPalette;
     widgetPalette.setColor(QPalette::Window, colors.background);
@@ -105,15 +155,10 @@ void ThemeManager::persistTheme(Theme theme) {
 
 QString ThemeManager::buildStylesheet(const ColorPalette& palette) const {
     const QString background = palette.background.name(QColor::HexRgb);
-    const QString foreground = palette.foreground.name(QColor::HexRgb);
 
     return QStringLiteral(
-               "QWidget {"
-               "  background-color: %1;"
-               "  color: %2;"
-               "}"
                "QMainWindow {"
                "  background-color: %1;"
                "}")
-        .arg(background, foreground);
+        .arg(background);
 }

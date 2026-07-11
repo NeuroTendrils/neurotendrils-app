@@ -16,6 +16,7 @@ public:
 
     void attach(QApplication* app);
     Theme currentTheme() const;
+    Theme effectiveTheme() const;
     ColorPalette palette() const;
 
     void setTheme(Theme theme);

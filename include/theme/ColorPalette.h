@@ -5,6 +5,7 @@
 enum class Theme {
     Light,
     Dark,
+    Auto,
 };
 
 struct ColorPalette {
