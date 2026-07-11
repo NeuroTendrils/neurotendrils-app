@@ -10,6 +10,7 @@ permissions:
 
 env:
   QT_VERSION: "6.11.1"
+  QT_VERSION_WINDOWS: "6.10.3"
 
 jobs:
   verify-version:
@@ -44,9 +45,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ env.QT_VERSION }}
+          version: ${{ env.QT_VERSION_WINDOWS }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+          cache-key-prefix: install-qt-${{ env.QT_VERSION_WINDOWS }}
 
       - name: Verify Qt
         shell: bash
