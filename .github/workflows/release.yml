@@ -11,6 +11,7 @@ permissions:
 env:
   QT_VERSION: "6.11.1"
   QT_VERSION_WINDOWS: "6.10.3"
+  QT_MODULES: "qtquick3d"
 
 jobs:
   verify-version:
@@ -46,14 +47,16 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION_WINDOWS }}
+          modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION_WINDOWS }}
+          cache-key-prefix: install-qt-${{ env.QT_VERSION_WINDOWS }}-quick3d
 
       - name: Verify Qt
         shell: bash
         run: |
           echo "QT_ROOT_DIR=$QT_ROOT_DIR"
           "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -103,13 +106,15 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
+          modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d
 
       - name: Verify Qt
         run: |
           echo "QT_ROOT_DIR=$QT_ROOT_DIR"
           "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -159,13 +164,15 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
+          modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d
 
       - name: Verify Qt
         run: |
           echo "QT_ROOT_DIR=$QT_ROOT_DIR"
           "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -227,13 +234,15 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
+          modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d
 
       - name: Verify Qt
         run: |
           echo "QT_ROOT_DIR=$QT_ROOT_DIR"
           "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
