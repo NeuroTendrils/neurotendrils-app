@@ -115,9 +115,6 @@ void ThemeManager::applyTheme() {
 
     QStyleHints* hints = app_->styleHints();
 
-    // Release the app back to the OS preference before reading it. A prior
-    // Light/Dark selection calls setColorScheme(), which would otherwise make
-    // colorScheme() return the last manual choice instead of the system one.
     if (theme_ == Theme::Auto) {
         hints->setColorScheme(Qt::ColorScheme::Unknown);
     } else if (theme_ == Theme::Dark) {
