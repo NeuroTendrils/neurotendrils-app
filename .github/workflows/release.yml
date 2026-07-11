@@ -1,0 +1,228 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  verify-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches CMake version
+        shell: bash
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CMAKE_VERSION=$(grep -oE 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')
+
+          if [ -z "$CMAKE_VERSION" ]; then
+            echo "Could not parse VERSION from CMakeLists.txt"
+            exit 1
+          fi
+
+          if [ "$TAG_VERSION" != "$CMAKE_VERSION" ]; then
+            echo "Tag v${TAG_VERSION} does not match CMake VERSION ${CMAKE_VERSION}"
+            exit 1
+          fi
+
+          echo "Release version ${CMAKE_VERSION} verified."
+
+  build-windows:
+    needs: verify-version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Deploy Qt runtime
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path build -Recurse -Filter "neurotendrils-app.exe" | Select-Object -First 1
+          if (-not $exe) {
+            throw "neurotendrils-app.exe not found under build/"
+          }
+          windeployqt $exe.FullName
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".Substring(1)
+          $exe = Get-ChildItem -Path build -Recurse -Filter "neurotendrils-app.exe" | Select-Object -First 1
+          $dir = $exe.Directory.FullName
+          $archive = "neurotendrils-app-windows-x64-$version.zip"
+          Compress-Archive -Path "$dir\*" -DestinationPath $archive
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: neurotendrils-app-windows-x64-*.zip
+
+  build-macos:
+    needs: verify-version
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Deploy Qt runtime
+        run: macdeployqt build/neurotendrils-app.app -always-overwrite
+
+      - name: Package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/neurotendrils-app.app \
+            "neurotendrils-app-macos-arm64-${VERSION}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: neurotendrils-app-macos-arm64-*.zip
+
+  build-linux:
+    needs: verify-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-cursor-dev \
+            file \
+            fuse \
+            libfuse2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Create AppImage
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            -e build/neurotendrils-app \
+            -d packaging/linux/neurotendrils.desktop \
+            --plugin qt \
+            --output appimage
+
+          APPIMAGE=$(ls -1 *.AppImage | head -1)
+          mv "$APPIMAGE" "neurotendrils-app-linux-x86_64-${VERSION}.AppImage"
+          chmod +x "neurotendrils-app-linux-x86_64-${VERSION}.AppImage"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: neurotendrils-app-linux-x86_64-*.AppImage
+
+  build-linux-arm64:
+    needs: verify-version
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-cursor-dev \
+            file \
+            fuse \
+            libfuse2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.5.3"
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Create AppImage
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-aarch64.AppImage
+          chmod +x linuxdeploy*.AppImage
+
+          ./linuxdeploy-aarch64.AppImage \
+            --appdir AppDir \
+            -e build/neurotendrils-app \
+            -d packaging/linux/neurotendrils.desktop \
+            --plugin qt \
+            --output appimage
+
+          APPIMAGE=$(ls -1 *.AppImage | head -1)
+          mv "$APPIMAGE" "neurotendrils-app-linux-aarch64-${VERSION}.AppImage"
+          chmod +x "neurotendrils-app-linux-aarch64-${VERSION}.AppImage"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-aarch64
+          path: neurotendrils-app-linux-aarch64-*.AppImage
+
+  release:
+    needs: [build-windows, build-macos, build-linux, build-linux-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: "*"
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true

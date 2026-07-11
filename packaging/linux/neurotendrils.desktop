@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NeuroTendrils
+Comment=NeuroTendrils desktop app
+Exec=neurotendrils-app
+Terminal=false
+Categories=Utility;Science;
+StartupWMClass=neurotendrils-app
