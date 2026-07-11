@@ -9,14 +9,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(NT_QT_COMPONENTS Widgets Network Quick Quick3D QuickWidgets)
+
 if(DEFINED ENV{QT_ROOT_DIR})
     list(PREPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
-    find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets
+    find_package(Qt6 6.8 REQUIRED COMPONENTS ${NT_QT_COMPONENTS}
         PATHS "$ENV{QT_ROOT_DIR}/lib/cmake/Qt6"
         NO_DEFAULT_PATH
     )
 else()
-    find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets)
+    find_package(Qt6 6.8 REQUIRED COMPONENTS ${NT_QT_COMPONENTS})
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/StripLegacyAgl.cmake")
@@ -28,6 +30,8 @@ endif()
 
 qt_add_executable(NeuroTendrils
     src/main.cpp
+    src/data/AppConfig.cpp
+    src/arm/RoArmController.cpp
     src/theme/ColorPalette.cpp
     src/theme/ThemeManager.cpp
     src/theme/AppFonts.cpp
@@ -35,6 +39,11 @@ qt_add_executable(NeuroTendrils
     src/ui/MainWindow.cpp
     src/ui/SettingsMenu.cpp
     src/ui/SettingsOverlay.cpp
+    src/ui/BrainView.cpp
+    src/ui/ArmWorkspace.cpp
+    src/ui/EducationPage.cpp
+    include/data/AppConfig.hpp
+    include/arm/RoArmController.hpp
     include/theme/ColorPalette.hpp
     include/theme/ThemeManager.hpp
     include/theme/AppFonts.hpp
@@ -42,10 +51,21 @@ qt_add_executable(NeuroTendrils
     include/ui/MainWindow.hpp
     include/ui/SettingsMenu.hpp
     include/ui/SettingsOverlay.hpp
+    include/ui/BrainView.hpp
+    include/ui/ArmWorkspace.hpp
+    include/ui/EducationPage.hpp
     resources/resources.qrc
+    resources/qml.qrc
+    resources/data.qrc
 )
 
-target_link_libraries(NeuroTendrils PRIVATE Qt6::Widgets)
+target_link_libraries(NeuroTendrils PRIVATE
+    Qt6::Widgets
+    Qt6::Network
+    Qt6::Quick
+    Qt6::Quick3D
+    Qt6::QuickWidgets
+)
 
 target_compile_definitions(NeuroTendrils PRIVATE
     NT_APP_VERSION="${PROJECT_VERSION}"

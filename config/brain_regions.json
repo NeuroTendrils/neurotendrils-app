@@ -1,0 +1,60 @@
+{
+  "regions": {
+    "m1_hand": {
+      "label": "Primary Motor Cortex (Hand)",
+      "short_label": "Hand (M1)",
+      "description": "Primary motor cortex (precentral gyrus): voluntary hand movements.",
+      "color": "#ff6b6b",
+      "highlight": {
+        "mesh_names": ["Precentral gyrus", "Precentral sulcus (inferior part)"]
+      }
+    },
+    "m1_shoulder": {
+      "label": "Primary Motor Cortex (Shoulder)",
+      "short_label": "Shoulder (M1)",
+      "description": "Superior precentral gyrus (M1): shoulder / upper arm.",
+      "color": "#4dabf7",
+      "highlight": {
+        "mesh_names": ["Paracentral gyrus and sulcus", "Paracentral gyrus"]
+      }
+    },
+    "pmc_rotation": {
+      "label": "Dorsal Premotor Cortex (PMd)",
+      "short_label": "Shoulder rotation (PMd)",
+      "description": "Dorsal premotor cortex (PMd): planning shoulder orientation and reaching.",
+      "color": "#fcc419",
+      "highlight": {
+        "mesh_names": ["Paracentral sulcus", "Paracentral gyrus and sulcus", "Paracentral gyrus"]
+      }
+    },
+    "m1_elbow": {
+      "label": "Motor and Premotor Cortex (Elbow)",
+      "short_label": "Elbow (M1 + PMC)",
+      "description": "Premotor and primary motor cortex: planning and coordination of reaching and arm movements.",
+      "color": "#69db7c",
+      "highlight": {
+        "mesh_names": ["Middle frontal gyrus"]
+      }
+    },
+    "sma_reset": {
+      "label": "Supplementary Motor Area",
+      "short_label": "SMA",
+      "description": "Supplementary motor area (SMA): movement initiation and coordinated motor sequences.",
+      "color": "#b197fc",
+      "highlight": {
+        "mesh_names": ["Superior frontal gyrus"]
+      }
+    }
+  },
+  "motions": {
+    "hand_open": { "region": "m1_hand", "label": "Open Gripper", "short_label": "Open" },
+    "hand_close": { "region": "m1_hand", "label": "Close Gripper", "short_label": "Close" },
+    "arm_raise": { "region": "m1_shoulder", "label": "Raise Shoulder", "short_label": "Raise" },
+    "arm_lower": { "region": "m1_shoulder", "label": "Lower Shoulder", "short_label": "Lower" },
+    "base_rotate_left": { "region": "pmc_rotation", "label": "Rotate Shoulder Left", "short_label": "Left" },
+    "base_rotate_right": { "region": "pmc_rotation", "label": "Rotate Shoulder Right", "short_label": "Right" },
+    "elbow_raise": { "region": "m1_elbow", "label": "Raise Elbow", "short_label": "Raise" },
+    "elbow_lower": { "region": "m1_elbow", "label": "Lower Elbow", "short_label": "Lower" },
+    "arm_reset": { "region": "sma_reset", "label": "Reset Pose", "short_label": "Reset" }
+  }
+}

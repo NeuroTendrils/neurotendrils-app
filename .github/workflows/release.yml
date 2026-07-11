@@ -75,7 +75,9 @@ jobs:
           if (-not $exe) {
             throw "NeuroTendrils.exe not found under build/"
           }
-          windeployqt $exe.FullName
+          # The QML scene ships inside the Qt resource system, so point
+          # windeployqt at the source qml dir to bundle Quick/Quick3D plugins.
+          windeployqt $exe.FullName --qmldir "$(Get-Location)\qml"
 
       - name: Package
         shell: pwsh
@@ -121,7 +123,7 @@ jobs:
         run: cmake --build build
 
       - name: Deploy Qt runtime
-        run: macdeployqt build/NeuroTendrils.app -always-overwrite
+        run: macdeployqt build/NeuroTendrils.app -always-overwrite -qmldir=qml
 
       - name: Package
         run: |
@@ -182,6 +184,9 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy*.AppImage
+
+          # Let the Qt plugin scan our QML for Quick/Quick3D import dependencies.
+          export QML_SOURCES_PATHS="$PWD/qml"
 
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -247,6 +252,9 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-aarch64.AppImage
           chmod +x linuxdeploy*.AppImage
+
+          # Let the Qt plugin scan our QML for Quick/Quick3D import dependencies.
+          export QML_SOURCES_PATHS="$PWD/qml"
 
           ./linuxdeploy-aarch64.AppImage \
             --appdir AppDir \

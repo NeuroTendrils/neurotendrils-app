@@ -1,0 +1,59 @@
+{
+  "carousel": [
+    {
+      "category": "BCI",
+      "title": "What is a brain-computer interface?",
+      "body": "A BCI reads neural signals from the brain and translates them into commands for an external device, here a robotic arm. No muscles are required: intent is decoded directly from cortical activity."
+    },
+    {
+      "category": "Neuroscience",
+      "title": "The motor homunculus",
+      "body": "The primary motor cortex is organized as a \"homunculus\": a distorted body map on the precentral gyrus. Hand and face occupy large lateral areas; shoulder and trunk sit more superiorly toward the midline. The leg and foot are represented on the paracentral lobule, not the shoulder."
+    },
+    {
+      "category": "Neuroscience",
+      "title": "Primary vs. premotor cortex",
+      "body": "M1 (primary motor cortex) on the precentral gyrus sends direct movement commands. Dorsal premotor cortex (PMd) plans reaching and shoulder orientation before execution. Premotor areas coordinate arm trajectories rather than hosting a single \"elbow patch.\""
+    },
+    {
+      "category": "Demo",
+      "title": "This is a live systems demo",
+      "body": "Buttons stand in for decoded intent so you can explore the full stack: cortical mapping, motion commands, and the robot arm. In the full system, EEG replaces the click."
+    },
+    {
+      "category": "Stack",
+      "title": "Braindecode and EEG CNNs",
+      "body": "We train motor-intent models with Braindecode, a PyTorch library for EEG deep learning. Convolutional networks learn spatial and temporal patterns in scalp EEG that correspond to imagined or attempted movement."
+    },
+    {
+      "category": "Stack",
+      "title": "ONNX and C++ inference",
+      "body": "Trained models export to ONNX and run in a C++ inference pipeline for low-latency decoding on the edge. That keeps classification close to the robot control loop instead of round-tripping through Python at runtime."
+    },
+    {
+      "category": "Stack",
+      "title": "EEG brain-to-text",
+      "body": "Alongside motor control, we are building an EEG brain-to-text path: decode linguistic or communicative intent from neural signals and turn it into text. The same record-decode-act pattern, aimed at communication rather than the arm."
+    },
+    {
+      "category": "BCI",
+      "title": "From thought to action",
+      "body": "A typical BCI pipeline: record brain activity, extract features, classify intent, then send a motor command. This demo lets you trigger the act stage by hand while the decode stack is developed in parallel."
+    },
+    {
+      "category": "Neuroscience",
+      "title": "Supplementary motor area",
+      "body": "The SMA, on the medial superior frontal cortex, supports movement initiation, sequencing, and coordinated multi-joint actions. In this demo it stands in for returning the arm to a home pose, not a literal \"reset\" circuit."
+    },
+    {
+      "category": "BCI",
+      "title": "Why highlight the brain?",
+      "body": "Each control maps to a region upper-limb BCIs often target: hand in M1, shoulder elevation in superior M1, reaching and orientation in PMd, arm coordination across M1 and premotor cortex, and sequenced poses in SMA."
+    },
+    {
+      "category": "Clinical",
+      "title": "Restoring movement",
+      "body": "BCIs paired with robotic assistive devices aim to restore independence after spinal cord injury, stroke, or ALS by translating preserved cortical signals into useful limb motion."
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "default_ip": "192.168.4.1",
+  "commands": {
+    "hand_open": {
+      "label": "Open gripper",
+      "start": { "T": 123, "m": 0, "axis": 4, "cmd": 2, "spd": 16 },
+      "stop": { "T": 123, "m": 0, "axis": 4, "cmd": 0, "spd": 0 }
+    },
+    "hand_close": {
+      "label": "Close gripper",
+      "start": { "T": 123, "m": 0, "axis": 4, "cmd": 1, "spd": 16 },
+      "stop": { "T": 123, "m": 0, "axis": 4, "cmd": 0, "spd": 0 }
+    },
+    "arm_raise": {
+      "label": "Raise shoulder",
+      "start": { "T": 123, "m": 0, "axis": 2, "cmd": 2, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 2, "cmd": 0, "spd": 0 }
+    },
+    "arm_lower": {
+      "label": "Lower shoulder",
+      "start": { "T": 123, "m": 0, "axis": 2, "cmd": 1, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 2, "cmd": 0, "spd": 0 }
+    },
+    "base_rotate_left": {
+      "label": "Rotate shoulder left",
+      "start": { "T": 123, "m": 0, "axis": 1, "cmd": 2, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 1, "cmd": 0, "spd": 0 }
+    },
+    "base_rotate_right": {
+      "label": "Rotate shoulder right",
+      "start": { "T": 123, "m": 0, "axis": 1, "cmd": 1, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 1, "cmd": 0, "spd": 0 }
+    },
+    "elbow_raise": {
+      "label": "Raise elbow",
+      "start": { "T": 123, "m": 0, "axis": 3, "cmd": 2, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 3, "cmd": 0, "spd": 0 }
+    },
+    "elbow_lower": {
+      "label": "Lower elbow",
+      "start": { "T": 123, "m": 0, "axis": 3, "cmd": 1, "spd": 10 },
+      "stop": { "T": 123, "m": 0, "axis": 3, "cmd": 0, "spd": 0 }
+    },
+    "arm_reset": {
+      "label": "Reset pose",
+      "one_shot": true,
+      "start": { "T": 100 }
+    }
+  }
+}

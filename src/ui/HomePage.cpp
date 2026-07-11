@@ -89,12 +89,14 @@ void HomePage::buildUi() {
         this);
     educationButton_ = createNavButton(
         QStringLiteral("Education"),
-        QStringLiteral("Education resources. Coming soon."),
+        QStringLiteral("Explore the brain-computer interface and control the arm."),
         this);
 
     buttonColumn->addWidget(roboticArmButton_, 0, Qt::AlignHCenter);
     buttonColumn->addWidget(eegToTextButton_, 0, Qt::AlignHCenter);
     buttonColumn->addWidget(educationButton_, 0, Qt::AlignHCenter);
+
+    connect(educationButton_, &QPushButton::clicked, this, &HomePage::educationRequested);
 
     rootLayout->addLayout(buttonColumn);
     rootLayout->addStretch(4);

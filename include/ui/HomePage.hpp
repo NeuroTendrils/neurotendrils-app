@@ -12,6 +12,9 @@ class HomePage final : public QWidget {
 public:
     explicit HomePage(ThemeManager& themeManager, QWidget* parent = nullptr);
 
+signals:
+    void educationRequested();
+
 private slots:
     void applyTheme();
 
