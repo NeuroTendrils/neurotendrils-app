@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(NeuroTendrils VERSION 0.2.2 LANGUAGES CXX)
+project(NeuroTendrils VERSION 0.2.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -87,4 +87,25 @@ if(APPLE)
     set_source_files_properties("${app_icon}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     target_sources(NeuroTendrils PRIVATE "${app_icon}")
     set_target_properties(NeuroTendrils PROPERTIES MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
+
+    # RuntimeLoader needs plugins/assetimporters — copy into the .app so
+    # `open NeuroTendrils.app` works without a full macdeployqt pass.
+    get_target_property(_qt_qmake_exe Qt6::qmake IMPORTED_LOCATION)
+    execute_process(
+        COMMAND "${_qt_qmake_exe}" -query QT_INSTALL_PLUGINS
+        OUTPUT_VARIABLE _qt_plugins_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(EXISTS "${_qt_plugins_dir}/assetimporters")
+        add_custom_command(TARGET NeuroTendrils POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_BUNDLE_DIR:NeuroTendrils>/Contents/PlugIns/assetimporters"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${_qt_plugins_dir}/assetimporters"
+                "$<TARGET_BUNDLE_DIR:NeuroTendrils>/Contents/PlugIns/assetimporters"
+            COMMENT "Bundling Qt assetimporters plugin for RuntimeLoader"
+        )
+    else()
+        message(WARNING "Qt assetimporters plugin not found under ${_qt_plugins_dir}")
+    endif()
 endif()

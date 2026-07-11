@@ -17,7 +17,11 @@ The bundled `brain.glb` is a derivative of the brainproject atlas, modified as f
    Qt's Quick 3D `RuntimeLoader` cannot read. The mesh was decompressed to plain
    glTF buffers with [glTF-Transform](https://gltf-transform.dev/)
    (`gltf-transform cp`), which increases file size but makes the model loadable
-   at runtime. Geometry, materials, and node names are otherwise unchanged.
+   at runtime.
+3. **Material simplification.** `KHR_materials_ior` and `KHR_materials_specular`
+   were removed from the glTF materials, and full-white emissive factors were
+   reduced, so Qt's runtime importer accepts the file reliably. Mesh geometry
+   and node names are otherwise unchanged.
 
 Per CC BY-SA 4.0, these changes are indicated here and the model remains under
 the same license.

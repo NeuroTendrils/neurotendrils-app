@@ -5,16 +5,54 @@
 #include "theme/ThemeManager.hpp"
 
 #include <QColor>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QLabel>
 #include <QQmlError>
 #include <QQuickItem>
 #include <QQuickWidget>
 #include <QResizeEvent>
 #include <QShowEvent>
+#include <QStandardPaths>
+#include <QTimer>
 #include <QVariantMap>
 #include <QVBoxLayout>
 
 #include <algorithm>
+
+namespace {
+
+// RuntimeLoader is unreliable with qrc: URLs. Staging the GLB as a real file
+// makes the assimp-backed importer behave consistently across local and
+// packaged builds.
+QUrl stagedBrainModelUrl() {
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QDir().mkpath(cacheDir);
+    const QString stagedPath = cacheDir + QStringLiteral("/brain.glb");
+
+    QFile resource(QStringLiteral(":/models/brain.glb"));
+    if (!resource.open(QIODevice::ReadOnly)) {
+        qWarning("Brain model resource missing: :/models/brain.glb");
+        return {};
+    }
+
+    const QByteArray bytes = resource.readAll();
+    QFileInfo stagedInfo(stagedPath);
+    if (!stagedInfo.exists() || stagedInfo.size() != bytes.size()) {
+        QFile out(stagedPath);
+        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            qWarning("Could not stage brain model to %s", qPrintable(stagedPath));
+            return QUrl(QStringLiteral("qrc:/models/brain.glb"));
+        }
+        out.write(bytes);
+        out.close();
+    }
+
+    return QUrl::fromLocalFile(stagedPath);
+}
+
+} // namespace
 
 BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
     : QWidget(parent)
@@ -34,6 +72,8 @@ BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
     statusLabel_->setAttribute(Qt::WA_TransparentForMouseEvents);
     statusLabel_->setGeometry(quickWidget_->rect());
 
+    modelSource_ = stagedBrainModelUrl();
+
     connect(&themeManager_, &ThemeManager::themeChanged, this, &BrainView::applyTheme);
     applyTheme();
 }
@@ -48,8 +88,6 @@ void BrainView::resizeEvent(QResizeEvent* event) {
     if (statusLabel_ != nullptr && quickWidget_ != nullptr) {
         statusLabel_->setGeometry(quickWidget_->rect());
     }
-    // First layout pass often happens after construction while still hidden;
-    // once we have a real size and are visible, start the scene.
     if (isVisible() && width() > 1 && height() > 1) {
         ensureSceneLoaded();
     }
@@ -60,6 +98,13 @@ void BrainView::ensureSceneLoaded() {
         return;
     }
     if (!isVisible() || width() < 2 || height() < 2) {
+        return;
+    }
+    if (!modelSource_.isValid() || modelSource_.isEmpty()) {
+        if (statusLabel_ != nullptr) {
+            statusLabel_->setText(QStringLiteral("Brain model missing from resources"));
+            statusLabel_->show();
+        }
         return;
     }
 
@@ -100,11 +145,36 @@ void BrainView::onQuickStatusChanged() {
     }
 
     sceneReady_ = true;
-    if (statusLabel_ != nullptr) {
-        statusLabel_->hide();
-    }
     applySceneProperties();
     applyTheme();
+
+    // RuntimeLoader finishes after the QML document is Ready — poll until the
+    // scene reports ready or surfaces an import error.
+    auto* poll = new QTimer(this);
+    poll->setInterval(100);
+    connect(poll, &QTimer::timeout, this, [this, poll]() {
+        QQuickItem* scene = quickWidget_->rootObject();
+        if (scene == nullptr) {
+            return;
+        }
+        if (scene->property("ready").toBool()) {
+            if (statusLabel_ != nullptr) {
+                statusLabel_->hide();
+            }
+            poll->stop();
+            poll->deleteLater();
+            return;
+        }
+        const QString err = scene->property("loadError").toString();
+        if (!err.isEmpty() && statusLabel_ != nullptr) {
+            statusLabel_->setText(QStringLiteral("Brain failed to load\n%1").arg(err));
+            statusLabel_->show();
+            statusLabel_->raise();
+            poll->stop();
+            poll->deleteLater();
+        }
+    });
+    poll->start();
 }
 
 void BrainView::setModelBounds(const QVector3D& minimum, const QVector3D& maximum) {

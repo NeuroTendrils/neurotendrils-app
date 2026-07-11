@@ -134,7 +134,13 @@ jobs:
         run: cmake --build build
 
       - name: Deploy Qt runtime
-        run: macdeployqt build/NeuroTendrils.app -always-overwrite -qmldir=qml
+        run: |
+          macdeployqt build/NeuroTendrils.app -always-overwrite -qmldir=qml
+          # RuntimeLoader needs the assimp asset importer; macdeployqt does not
+          # always pull it from -qmldir alone.
+          mkdir -p build/NeuroTendrils.app/Contents/PlugIns/assetimporters
+          cp -R "$QT_ROOT_DIR/plugins/assetimporters/." \
+            build/NeuroTendrils.app/Contents/PlugIns/assetimporters/
 
       - name: Package
         run: |

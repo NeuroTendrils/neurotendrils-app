@@ -4,6 +4,8 @@
 #include "ui/MainWindow.hpp"
 
 #include <QApplication>
+#include <QCoreApplication>
+#include <QLibraryInfo>
 #include <QMessageBox>
 
 int main(int argc, char* argv[]) {
@@ -12,6 +14,14 @@ int main(int argc, char* argv[]) {
     app.setApplicationDisplayName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationDomain(QStringLiteral("neurotendrils.com"));
+
+    // RuntimeLoader needs the assimp asset importer plugin. Ensure both the
+    // Qt install plugins dir and a bundled PlugIns/ folder are searchable.
+    QCoreApplication::addLibraryPath(QLibraryInfo::path(QLibraryInfo::PluginsPath));
+#ifdef Q_OS_MACOS
+    QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath()
+        + QStringLiteral("/../PlugIns"));
+#endif
 
     AppFonts::initialize(app);
 
