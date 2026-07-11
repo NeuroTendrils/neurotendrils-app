@@ -1,5 +1,10 @@
 #include "theme/ThemeManager.h"
 
+#include <QtGlobal>
+
+static_assert(QT_VERSION >= QT_VERSION_CHECK(6, 8, 0),
+              "Qt 6.8+ is required for QStyleHints::setColorScheme");
+
 #include <QApplication>
 #include <QPalette>
 #include <QSettings>

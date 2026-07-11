@@ -46,6 +46,15 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+
+      - name: Verify Qt
+        shell: bash
+        run: |
+          echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+          "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
+          grep setColorScheme "$HEADER"
 
       - name: Configure
         shell: bash
@@ -92,6 +101,14 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+
+      - name: Verify Qt
+        run: |
+          echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+          "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
+          grep setColorScheme "$HEADER"
 
       - name: Configure
         run: |
@@ -140,6 +157,14 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+
+      - name: Verify Qt
+        run: |
+          echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+          "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
+          grep setColorScheme "$HEADER"
 
       - name: Configure
         run: |
@@ -196,6 +221,14 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}
+
+      - name: Verify Qt
+        run: |
+          echo "QT_ROOT_DIR=$QT_ROOT_DIR"
+          "$QT_ROOT_DIR/bin/qmake" -query QT_VERSION
+          HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
+          grep setColorScheme "$HEADER"
 
       - name: Configure
         run: |

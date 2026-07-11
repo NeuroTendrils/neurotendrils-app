@@ -9,7 +9,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets)
+if(DEFINED ENV{QT_ROOT_DIR})
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets
+        PATHS "$ENV{QT_ROOT_DIR}/lib/cmake/Qt6"
+        NO_DEFAULT_PATH
+    )
+else()
+    find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets)
+endif()
+
+if(Qt6_VERSION VERSION_LESS "6.8.0")
+    message(FATAL_ERROR "Qt ${Qt6_VERSION} found but 6.8+ is required for QStyleHints::setColorScheme")
+endif()
 
 qt_add_executable(neurotendrils-app
     src/main.cpp
