@@ -6,8 +6,11 @@ static_assert(QT_VERSION >= QT_VERSION_CHECK(6, 8, 0),
               "Qt 6.8+ is required for QStyleHints::setColorScheme");
 
 #include <QApplication>
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <QPalette>
 #include <QSettings>
+#include <QStyle>
 #include <QStyleHints>
 
 namespace {
@@ -39,11 +42,12 @@ Theme themeFromString(const QString& value) {
     return Theme::Auto;
 }
 
-Theme systemTheme(QStyleHints* hints) {
-    if (hints == nullptr) {
-        return Theme::Dark;
+Theme systemTheme(QApplication* app) {
+    if (app == nullptr) {
+        return Theme::Light;
     }
 
+    QStyleHints* hints = app->styleHints();
     switch (hints->colorScheme()) {
     case Qt::ColorScheme::Light:
         return Theme::Light;
@@ -53,7 +57,8 @@ Theme systemTheme(QStyleHints* hints) {
         break;
     }
 
-    return Theme::Dark;
+    const QColor window = app->style()->standardPalette().color(QPalette::Window);
+    return window.lightness() > 128 ? Theme::Light : Theme::Dark;
 }
 
 } // namespace
@@ -85,7 +90,7 @@ Theme ThemeManager::effectiveTheme() const {
         return theme_;
     }
 
-    return systemTheme(app_ != nullptr ? app_->styleHints() : nullptr);
+    return systemTheme(app_);
 }
 
 ColorPalette ThemeManager::palette() const {
@@ -122,13 +127,14 @@ void ThemeManager::applyTheme() {
 
     if (theme_ == Theme::Auto) {
         hints->setColorScheme(Qt::ColorScheme::Unknown);
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     } else if (theme_ == Theme::Dark) {
         hints->setColorScheme(Qt::ColorScheme::Dark);
     } else {
         hints->setColorScheme(Qt::ColorScheme::Light);
     }
 
-    const Theme effective = systemTheme(hints);
+    const Theme effective = systemTheme(app_);
     const ColorPalette colors = ColorPalette::forTheme(effective);
 
     QPalette widgetPalette;

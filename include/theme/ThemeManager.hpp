@@ -32,5 +32,5 @@ private:
     QString buildStylesheet(const ColorPalette& palette) const;
 
     QApplication* app_ = nullptr;
-    Theme theme_ = Theme::Dark;
+    Theme theme_ = Theme::Auto;
 };
