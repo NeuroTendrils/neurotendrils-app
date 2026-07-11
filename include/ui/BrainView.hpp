@@ -43,7 +43,7 @@ private:
 
     bool sceneRequested_ = false;
     bool sceneReady_ = false;
-    QUrl modelSource_{QStringLiteral("qrc:/models/brain.glb")};
+    QUrl modelSource_;
     QVector3D modelCenter_{0.0F, 1.619F, -0.009F};
     float modelSize_ = 0.181F;
     bool hasBounds_ = true;

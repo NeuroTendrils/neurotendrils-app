@@ -10,7 +10,7 @@ import QtQuick3D.AssetUtils
 Item {
     id: root
 
-    property url modelSource: "qrc:/models/brain.glb"
+    property url modelSource: ""
     property color baseColor: "#b5aea0"
     property color glowColor: "#6f96ff"
     property color backgroundColor: "#ffffff"

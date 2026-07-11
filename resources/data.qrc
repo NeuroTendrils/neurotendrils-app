@@ -4,6 +4,5 @@
         <file alias="config/brain_regions.json">../config/brain_regions.json</file>
         <file alias="config/education.json">../config/education.json</file>
         <file alias="config/roarm_commands.json">../config/roarm_commands.json</file>
-        <file alias="models/brain.glb">../assets/brain/brain.glb</file>
     </qresource>
 </RCC>

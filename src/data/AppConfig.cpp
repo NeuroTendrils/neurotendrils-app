@@ -7,6 +7,8 @@
 #include <QJsonParseError>
 #include <QtEndian>
 
+#include "data/AppPaths.hpp"
+
 #include <functional>
 
 namespace {
@@ -64,7 +66,7 @@ bool AppConfig::load(QString* error) {
 // GLB's JSON chunk and maps each region's configured mesh names (prefix match,
 // covering ".l"/".r" hemisphere suffixes) to positions in that traversal.
 void AppConfig::resolveModelIndices() {
-    QFile file(QStringLiteral(":/models/brain.glb"));
+    QFile file(AppPaths::brainModelFile());
     if (!file.open(QIODevice::ReadOnly)) {
         return;
     }

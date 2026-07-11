@@ -91,6 +91,9 @@ jobs:
           $version = "${{ github.ref_name }}".Substring(1)
           $exe = Get-ChildItem -Path build -Recurse -Filter "NeuroTendrils.exe" | Select-Object -First 1
           $dir = $exe.Directory.FullName
+          # Ensure the atlas sits next to the exe (POST_BUILD should already copy it).
+          New-Item -ItemType Directory -Force -Path "$dir\resources" | Out-Null
+          Copy-Item -Force "assets\brain\brain.glb" "$dir\resources\brain.glb"
           $archive = "NeuroTendrils-windows-x64-$version.zip"
           Compress-Archive -Path "$dir\*" -DestinationPath $archive
 
@@ -141,11 +144,15 @@ jobs:
           mkdir -p build/NeuroTendrils.app/Contents/PlugIns/assetimporters
           cp -R "$QT_ROOT_DIR/plugins/assetimporters/." \
             build/NeuroTendrils.app/Contents/PlugIns/assetimporters/
+          # macdeployqt leaves the bundle unsigned / invalidly signed. Ad-hoc
+          # sign so Gatekeeper doesn't report the download as "damaged".
+          codesign --force --deep --sign - build/NeuroTendrils.app
+          xattr -cr build/NeuroTendrils.app
 
       - name: Package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          ditto -c -k --sequesterRsrc --keepParent \
+          ditto -c -k --keepParent \
             build/NeuroTendrils.app \
             "NeuroTendrils-macos-arm64-${VERSION}.zip"
 
@@ -215,10 +222,20 @@ jobs:
             -e build/NeuroTendrils \
             -d packaging/linux/NeuroTendrils.desktop \
             -i packaging/linux/NeuroTendrils.png \
-            --plugin qt \
+            --plugin qt
+
+          # Brain atlas ships beside the binary (not embedded in the executable).
+          mkdir -p AppDir/usr/bin/resources
+          cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
+
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
             --output appimage
 
-          APPIMAGE=$(ls -1 *.AppImage | head -1)
+          APPIMAGE=$(ls -1 NeuroTendrils*.AppImage 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            APPIMAGE=$(ls -1 *.AppImage | grep -v linuxdeploy | head -1)
+          fi
           mv "$APPIMAGE" "NeuroTendrils-linux-x86_64-${VERSION}.AppImage"
           chmod +x "NeuroTendrils-linux-x86_64-${VERSION}.AppImage"
 
@@ -288,10 +305,20 @@ jobs:
             -e build/NeuroTendrils \
             -d packaging/linux/NeuroTendrils.desktop \
             -i packaging/linux/NeuroTendrils.png \
-            --plugin qt \
+            --plugin qt
+
+          # Brain atlas ships beside the binary (not embedded in the executable).
+          mkdir -p AppDir/usr/bin/resources
+          cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
+
+          ./linuxdeploy-aarch64.AppImage \
+            --appdir AppDir \
             --output appimage
 
-          APPIMAGE=$(ls -1 *.AppImage | head -1)
+          APPIMAGE=$(ls -1 NeuroTendrils*.AppImage 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            APPIMAGE=$(ls -1 *.AppImage | grep -v linuxdeploy | head -1)
+          fi
           mv "$APPIMAGE" "NeuroTendrils-linux-aarch64-${VERSION}.AppImage"
           chmod +x "NeuroTendrils-linux-aarch64-${VERSION}.AppImage"
 

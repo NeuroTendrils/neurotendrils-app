@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(NeuroTendrils VERSION 0.2.3 LANGUAGES CXX)
+project(NeuroTendrils VERSION 0.2.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +27,7 @@ endif()
 qt_add_executable(NeuroTendrils
     src/main.cpp
     src/data/AppConfig.cpp
+    src/data/AppPaths.cpp
     src/arm/RoArmController.cpp
     src/theme/ColorPalette.cpp
     src/theme/ThemeManager.cpp
@@ -40,6 +41,7 @@ qt_add_executable(NeuroTendrils
     src/ui/EducationPage.cpp
     src/ui/WipPage.cpp
     include/data/AppConfig.hpp
+    include/data/AppPaths.hpp
     include/arm/RoArmController.hpp
     include/theme/ColorPalette.hpp
     include/theme/ThemeManager.hpp
@@ -84,8 +86,10 @@ set_target_properties(NeuroTendrils PROPERTIES
 
 if(APPLE)
     set(app_icon "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/AppIcon.icns")
+    set(brain_model "${CMAKE_CURRENT_SOURCE_DIR}/assets/brain/brain.glb")
     set_source_files_properties("${app_icon}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    target_sources(NeuroTendrils PRIVATE "${app_icon}")
+    set_source_files_properties("${brain_model}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    target_sources(NeuroTendrils PRIVATE "${app_icon}" "${brain_model}")
     set_target_properties(NeuroTendrils PROPERTIES MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
 
     # RuntimeLoader needs plugins/assetimporters — copy into the .app so
@@ -108,4 +112,14 @@ if(APPLE)
     else()
         message(WARNING "Qt assetimporters plugin not found under ${_qt_plugins_dir}")
     endif()
+else()
+    # Keep the 6MB atlas out of the executable; ship it next to the binary.
+    add_custom_command(TARGET NeuroTendrils POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:NeuroTendrils>/resources"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets/brain/brain.glb"
+            "$<TARGET_FILE_DIR:NeuroTendrils>/resources/brain.glb"
+        COMMENT "Copying brain model beside executable"
+    )
 endif()

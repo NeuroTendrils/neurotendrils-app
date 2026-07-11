@@ -1,12 +1,11 @@
 #include "ui/BrainView.hpp"
 
+#include "data/AppPaths.hpp"
 #include "theme/AppFonts.hpp"
 #include "theme/ColorPalette.hpp"
 #include "theme/ThemeManager.hpp"
 
 #include <QColor>
-#include <QDir>
-#include <QFile>
 #include <QFileInfo>
 #include <QLabel>
 #include <QQmlError>
@@ -14,45 +13,11 @@
 #include <QQuickWidget>
 #include <QResizeEvent>
 #include <QShowEvent>
-#include <QStandardPaths>
 #include <QTimer>
 #include <QVariantMap>
 #include <QVBoxLayout>
 
 #include <algorithm>
-
-namespace {
-
-// RuntimeLoader is unreliable with qrc: URLs. Staging the GLB as a real file
-// makes the assimp-backed importer behave consistently across local and
-// packaged builds.
-QUrl stagedBrainModelUrl() {
-    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    QDir().mkpath(cacheDir);
-    const QString stagedPath = cacheDir + QStringLiteral("/brain.glb");
-
-    QFile resource(QStringLiteral(":/models/brain.glb"));
-    if (!resource.open(QIODevice::ReadOnly)) {
-        qWarning("Brain model resource missing: :/models/brain.glb");
-        return {};
-    }
-
-    const QByteArray bytes = resource.readAll();
-    QFileInfo stagedInfo(stagedPath);
-    if (!stagedInfo.exists() || stagedInfo.size() != bytes.size()) {
-        QFile out(stagedPath);
-        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-            qWarning("Could not stage brain model to %s", qPrintable(stagedPath));
-            return QUrl(QStringLiteral("qrc:/models/brain.glb"));
-        }
-        out.write(bytes);
-        out.close();
-    }
-
-    return QUrl::fromLocalFile(stagedPath);
-}
-
-} // namespace
 
 BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
     : QWidget(parent)
@@ -72,7 +37,12 @@ BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
     statusLabel_->setAttribute(Qt::WA_TransparentForMouseEvents);
     statusLabel_->setGeometry(quickWidget_->rect());
 
-    modelSource_ = stagedBrainModelUrl();
+    const QString modelPath = AppPaths::brainModelFile();
+    if (QFileInfo::exists(modelPath)) {
+        modelSource_ = QUrl::fromLocalFile(modelPath);
+    } else {
+        qWarning("Brain model not found at %s", qPrintable(modelPath));
+    }
 
     connect(&themeManager_, &ThemeManager::themeChanged, this, &BrainView::applyTheme);
     applyTheme();
