@@ -1,5 +1,6 @@
 #include "ui/SettingsOverlay.h"
 
+#include "AppVersion.h"
 #include "theme/AppFonts.h"
 #include "theme/ColorPalette.h"
 #include "theme/ThemeManager.h"
@@ -9,6 +10,7 @@
 #include <QEvent>
 #include <QGraphicsDropShadowEffect>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -23,7 +25,6 @@ constexpr int kPanelWidth = 620;
 constexpr int kPanelHeight = 400;
 constexpr int kSidebarWidth = 170;
 constexpr char kWebsiteUrl[] = "https://neurotendrils.com";
-constexpr char kAppVersion[] = "0.1.0";
 
 QWidget* createPreviewBar(const QString& color, int height) {
     auto* bar = new QLabel();
@@ -95,12 +96,18 @@ QWidget* createThemePreview(Theme previewTheme) {
     return preview;
 }
 
-QPushButton* createThemeCard(const QString& label, Theme previewTheme, QWidget* parent) {
+QPushButton* createThemeCard(
+    const QString& label,
+    Theme previewTheme,
+    const QString& accessibleDescription,
+    QWidget* parent) {
     auto* card = new QPushButton(parent);
     card->setObjectName(QStringLiteral("theme-card"));
     card->setCheckable(true);
     card->setCursor(Qt::PointingHandCursor);
     card->setFixedSize(118, 98);
+    card->setAccessibleName(label);
+    card->setAccessibleDescription(accessibleDescription);
 
     auto* cardLayout = new QVBoxLayout(card);
     cardLayout->setContentsMargins(8, 8, 8, 8);
@@ -124,6 +131,9 @@ SettingsOverlay::SettingsOverlay(ThemeManager& themeManager, QWidget* parent)
     : QWidget(parent)
     , themeManager_(themeManager) {
     setObjectName(QStringLiteral("settings-overlay"));
+    setAccessibleName(QStringLiteral("Settings"));
+    setAccessibleDescription(QStringLiteral("Application settings. Press Escape to close."));
+    setFocusPolicy(Qt::StrongFocus);
     hide();
 
     buildUi();
@@ -147,6 +157,7 @@ void SettingsOverlay::buildUi() {
     panel_->setObjectName(QStringLiteral("settings-panel"));
     panel_->setFixedSize(kPanelWidth, kPanelHeight);
     panel_->setAttribute(Qt::WA_StyledBackground, true);
+    panel_->setFocusPolicy(Qt::StrongFocus);
 
     auto* shadow = new QGraphicsDropShadowEffect(panel_);
     shadow->setBlurRadius(48);
@@ -173,11 +184,15 @@ void SettingsOverlay::buildUi() {
     appearanceNav_ = new QLabel(QStringLiteral("Appearance"), sidebar_);
     appearanceNav_->setCursor(Qt::PointingHandCursor);
     appearanceNav_->setAttribute(Qt::WA_Hover, true);
+    appearanceNav_->setAccessibleName(QStringLiteral("Appearance"));
+    appearanceNav_->setAccessibleDescription(QStringLiteral("Show theme and display settings"));
     appearanceNav_->installEventFilter(this);
 
     infoNav_ = new QLabel(QStringLiteral("Info"), sidebar_);
     infoNav_->setCursor(Qt::PointingHandCursor);
     infoNav_->setAttribute(Qt::WA_Hover, true);
+    infoNav_->setAccessibleName(QStringLiteral("Info"));
+    infoNav_->setAccessibleDescription(QStringLiteral("Show application version and website"));
     infoNav_->installEventFilter(this);
 
     sidebarLayout->addWidget(settingsTitle);
@@ -222,9 +237,21 @@ void SettingsOverlay::buildUi() {
     themeGroup_ = new QButtonGroup(themeCards);
     themeGroup_->setExclusive(true);
 
-    lightThemeCard_ = createThemeCard(QStringLiteral("Light"), Theme::Light, themeCards);
-    darkThemeCard_ = createThemeCard(QStringLiteral("Dark"), Theme::Dark, themeCards);
-    autoThemeCard_ = createThemeCard(QStringLiteral("Auto"), Theme::Auto, themeCards);
+    lightThemeCard_ = createThemeCard(
+        QStringLiteral("Light"),
+        Theme::Light,
+        QStringLiteral("Always use the light theme"),
+        themeCards);
+    darkThemeCard_ = createThemeCard(
+        QStringLiteral("Dark"),
+        Theme::Dark,
+        QStringLiteral("Always use the dark theme"),
+        themeCards);
+    autoThemeCard_ = createThemeCard(
+        QStringLiteral("Auto"),
+        Theme::Auto,
+        QStringLiteral("Match the system light or dark appearance"),
+        themeCards);
 
     themeGroup_->addButton(lightThemeCard_);
     themeGroup_->addButton(darkThemeCard_);
@@ -272,7 +299,9 @@ void SettingsOverlay::buildUi() {
     appNameLabel->setObjectName(QStringLiteral("info-app-name"));
     appNameLabel->setFont(AppFonts::semibold(15));
 
-    auto* versionLabel = new QLabel(QStringLiteral("Version %1").arg(QString::fromLatin1(kAppVersion)), appIdentity);
+    auto* versionLabel = new QLabel(
+        QStringLiteral("Version %1").arg(QString::fromLatin1(NT_APP_VERSION)),
+        appIdentity);
     versionLabel->setObjectName(QStringLiteral("info-secondary"));
     versionLabel->setFont(AppFonts::regular(13));
 
@@ -286,6 +315,8 @@ void SettingsOverlay::buildUi() {
     websiteLink->setOpenExternalLinks(true);
     websiteLink->setCursor(Qt::PointingHandCursor);
     websiteLink->setText(QStringLiteral("<a href=\"%1\">%1</a>").arg(QString::fromLatin1(kWebsiteUrl)));
+    websiteLink->setAccessibleName(QStringLiteral("NeuroTendrils website"));
+    websiteLink->setAccessibleDescription(QStringLiteral("Opens neurotendrils.com in your browser"));
 
     infoLayout->addWidget(infoHeading);
     infoLayout->addWidget(appIdentity);
@@ -343,6 +374,10 @@ void SettingsOverlay::openPanel() {
     raise();
     show();
     layoutPanel();
+    setFocus(Qt::PopupFocusReason);
+    if (panel_ != nullptr) {
+        panel_->setFocus(Qt::PopupFocusReason);
+    }
     emit opened();
 }
 
@@ -363,6 +398,16 @@ bool SettingsOverlay::isOpen() const {
 void SettingsOverlay::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     layoutPanel();
+}
+
+void SettingsOverlay::keyPressEvent(QKeyEvent* event) {
+    if (open_ && event->key() == Qt::Key_Escape) {
+        closePanel();
+        event->accept();
+        return;
+    }
+
+    QWidget::keyPressEvent(event);
 }
 
 void SettingsOverlay::layoutPanel() {
@@ -476,6 +521,10 @@ QString SettingsOverlay::panelStylesheet() const {
                "}"
                "QPushButton#theme-card:checked QLabel#theme-card-label {"
                "  color: %6;"
+               "}"
+               "QPushButton#theme-card:focus {"
+               "  border-color: %7;"
+               "  outline: none;"
                "}"
                "QLabel#info-app-name {"
                "  color: %6;"

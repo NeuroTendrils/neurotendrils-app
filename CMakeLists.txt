@@ -32,6 +32,10 @@ qt_add_executable(neurotendrils-app
 
 target_link_libraries(neurotendrils-app PRIVATE Qt6::Widgets)
 
+target_compile_definitions(neurotendrils-app PRIVATE
+    NT_APP_VERSION="${PROJECT_VERSION}"
+)
+
 target_include_directories(neurotendrils-app PRIVATE include)
 
 set_target_properties(neurotendrils-app PROPERTIES

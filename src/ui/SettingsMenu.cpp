@@ -34,7 +34,8 @@ SettingsMenu::SettingsMenu(
     button_->setFont(AppFonts::regular(kGearFontSize));
     button_->setToolTip(QStringLiteral("Settings"));
     button_->setAccessibleName(QStringLiteral("Settings"));
-    button_->setFocusPolicy(Qt::NoFocus);
+    button_->setAccessibleDescription(QStringLiteral("Open application settings"));
+    button_->setFocusPolicy(Qt::TabFocus);
     button_->setCursor(Qt::PointingHandCursor);
 
     layout->addWidget(button_);
@@ -64,6 +65,10 @@ void SettingsMenu::applyTheme() {
         "QPushButton#settings-button:pressed {"
         "  color: %2;"
         "  background: transparent;"
+        "}"
+        "QPushButton#settings-button:focus {"
+        "  color: %2;"
+        "  outline: none;"
         "}")
         .arg(foregroundMuted, foreground));
 }

@@ -22,11 +22,15 @@ constexpr int kNavButtonSpacing = 16;
 
 constexpr int kWordmarkToButtonsSpacing = 48;
 
-QPushButton* createNavButton(const QString& label, QWidget* parent) {
+QPushButton* createNavButton(const QString& label, const QString& description, QWidget* parent) {
     auto* button = new QPushButton(label, parent);
     button->setObjectName(QStringLiteral("nav-button"));
     button->setFixedSize(kNavButtonWidth, kNavButtonHeight);
     button->setCursor(Qt::PointingHandCursor);
+    button->setFont(AppFonts::semibold(16));
+    button->setAccessibleName(label);
+    button->setAccessibleDescription(description);
+    button->setToolTip(description);
     return button;
 }
 
@@ -57,9 +61,11 @@ void HomePage::buildUi() {
 
     neuroLabel_ = new QLabel(QStringLiteral("Neuro"), this);
     neuroLabel_->setObjectName(QStringLiteral("wordmark-neuro"));
+    neuroLabel_->setAccessibleName(QStringLiteral("NeuroTendrils"));
 
     tendrilsLabel_ = new QLabel(QStringLiteral("Tendrils"), this);
     tendrilsLabel_->setObjectName(QStringLiteral("wordmark-tendrils"));
+    tendrilsLabel_->setAccessibleDescription(QString());
 
     wordmarkRow->addWidget(neuroLabel_);
     wordmarkRow->addWidget(tendrilsLabel_);
@@ -73,13 +79,18 @@ void HomePage::buildUi() {
     buttonColumn->setSpacing(kNavButtonSpacing);
     buttonColumn->setAlignment(Qt::AlignHCenter);
 
-    roboticArmButton_ = createNavButton(QStringLiteral("Robotic Arm"), this);
-    eegToTextButton_ = createNavButton(QStringLiteral("EEG-to-Text"), this);
-    educationButton_ = createNavButton(QStringLiteral("Education"), this);
-
-    roboticArmButton_->setToolTip(QStringLiteral("Coming soon"));
-    eegToTextButton_->setToolTip(QStringLiteral("Coming soon"));
-    educationButton_->setToolTip(QStringLiteral("Coming soon"));
+    roboticArmButton_ = createNavButton(
+        QStringLiteral("Robotic Arm"),
+        QStringLiteral("Robotic arm control. Coming soon."),
+        this);
+    eegToTextButton_ = createNavButton(
+        QStringLiteral("EEG-to-Text"),
+        QStringLiteral("EEG-to-text interface. Coming soon."),
+        this);
+    educationButton_ = createNavButton(
+        QStringLiteral("Education"),
+        QStringLiteral("Education resources. Coming soon."),
+        this);
 
     buttonColumn->addWidget(roboticArmButton_, 0, Qt::AlignHCenter);
     buttonColumn->addWidget(eegToTextButton_, 0, Qt::AlignHCenter);
@@ -132,8 +143,6 @@ QString HomePage::navButtonStylesheet() const {
                "  color: %2;"
                "  border: 1px solid %3;"
                "  border-radius: 10px;"
-               "  font-weight: 600;"
-               "  font-size: 16px;"
                "  padding: 0 20px;"
                "}"
                "QPushButton#nav-button:hover {"
@@ -147,7 +156,8 @@ QString HomePage::navButtonStylesheet() const {
                "  color: %6;"
                "}"
                "QPushButton#nav-button:focus {"
-               "  outline: none;"
+               "  border-color: %5;"
+               "  border-width: 2px;"
                "}")
         .arg(elevated, foreground, border, accentSubtle, accent, accentStrong);
 }
