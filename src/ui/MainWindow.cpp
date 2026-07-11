@@ -7,6 +7,7 @@
 #include "ui/HomePage.hpp"
 #include "ui/SettingsMenu.hpp"
 #include "ui/SettingsOverlay.hpp"
+#include "ui/WipPage.hpp"
 
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -65,11 +66,19 @@ MainWindow::MainWindow(ThemeManager& themeManager, const AppConfig& config, QWid
     homePage_ = new HomePage(themeManager_, shell_);
     homePage_->setAttribute(Qt::WA_StyledBackground, true);
     educationPage_ = new EducationPage(themeManager_, config_, shell_);
+    wipPage_ = new WipPage(themeManager_, QStringLiteral("This feature"), shell_);
 
     content_->addWidget(homePage_);
     content_->addWidget(educationPage_);
+    content_->addWidget(wipPage_);
 
     connect(homePage_, &HomePage::educationRequested, this, &MainWindow::showEducation);
+    connect(homePage_, &HomePage::roboticArmRequested, this, [this]() {
+        showWip(QStringLiteral("Robotic Arm"));
+    });
+    connect(homePage_, &HomePage::eegToTextRequested, this, [this]() {
+        showWip(QStringLiteral("EEG-to-Text"));
+    });
 
     rootLayout->addWidget(topBar_);
     rootLayout->addWidget(content_, 1);
@@ -88,6 +97,12 @@ void MainWindow::showHome() {
 
 void MainWindow::showEducation() {
     content_->setCurrentWidget(educationPage_);
+    backButton_->show();
+}
+
+void MainWindow::showWip(const QString& featureName) {
+    wipPage_->setFeatureName(featureName);
+    content_->setCurrentWidget(wipPage_);
     backButton_->show();
 }
 

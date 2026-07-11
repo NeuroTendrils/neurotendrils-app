@@ -8,6 +8,7 @@ class HomePage;
 class SettingsMenu;
 class SettingsOverlay;
 class ThemeManager;
+class WipPage;
 class QPushButton;
 class QStackedWidget;
 
@@ -27,6 +28,7 @@ private:
     void layoutOverlay();
     void showHome();
     void showEducation();
+    void showWip(const QString& featureName);
 
     ThemeManager& themeManager_;
     const AppConfig& config_;
@@ -36,6 +38,7 @@ private:
     QStackedWidget* content_ = nullptr;
     HomePage* homePage_ = nullptr;
     EducationPage* educationPage_ = nullptr;
+    WipPage* wipPage_ = nullptr;
     SettingsMenu* settingsMenu_ = nullptr;
     SettingsOverlay* settingsOverlay_ = nullptr;
 };

@@ -81,11 +81,11 @@ void HomePage::buildUi() {
 
     roboticArmButton_ = createNavButton(
         QStringLiteral("Robotic Arm"),
-        QStringLiteral("Robotic arm control. Coming soon."),
+        QStringLiteral("Robotic arm control."),
         this);
     eegToTextButton_ = createNavButton(
         QStringLiteral("EEG-to-Text"),
-        QStringLiteral("EEG-to-text interface. Coming soon."),
+        QStringLiteral("EEG-to-text interface."),
         this);
     educationButton_ = createNavButton(
         QStringLiteral("Education"),
@@ -96,6 +96,8 @@ void HomePage::buildUi() {
     buttonColumn->addWidget(eegToTextButton_, 0, Qt::AlignHCenter);
     buttonColumn->addWidget(educationButton_, 0, Qt::AlignHCenter);
 
+    connect(roboticArmButton_, &QPushButton::clicked, this, &HomePage::roboticArmRequested);
+    connect(eegToTextButton_, &QPushButton::clicked, this, &HomePage::eegToTextRequested);
     connect(educationButton_, &QPushButton::clicked, this, &HomePage::educationRequested);
 
     rootLayout->addLayout(buttonColumn);

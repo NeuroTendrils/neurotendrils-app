@@ -38,6 +38,7 @@ qt_add_executable(NeuroTendrils
     src/ui/BrainView.cpp
     src/ui/ArmWorkspace.cpp
     src/ui/EducationPage.cpp
+    src/ui/WipPage.cpp
     include/data/AppConfig.hpp
     include/arm/RoArmController.hpp
     include/theme/ColorPalette.hpp
@@ -50,6 +51,7 @@ qt_add_executable(NeuroTendrils
     include/ui/BrainView.hpp
     include/ui/ArmWorkspace.hpp
     include/ui/EducationPage.hpp
+    include/ui/WipPage.hpp
     resources/resources.qrc
     resources/qml.qrc
     resources/data.qrc
@@ -62,6 +64,10 @@ target_link_libraries(NeuroTendrils PRIVATE
     Qt6::Quick3D
     Qt6::QuickWidgets
 )
+
+# Embed QML plugin imports so Quick3D works without macdeployqt/windeployqt
+# beside the executable (dev builds, incomplete deploys).
+qt_import_qml_plugins(NeuroTendrils)
 
 target_compile_definitions(NeuroTendrils PRIVATE
     NT_APP_VERSION="${PROJECT_VERSION}"

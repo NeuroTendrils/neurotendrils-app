@@ -10,17 +10,17 @@ import QtQuick3D.AssetUtils
 Item {
     id: root
 
-    property url modelSource
-    property color baseColor: "#c7ccd8"
+    property url modelSource: "qrc:/models/brain.glb"
+    property color baseColor: "#b5aea0"
     property color glowColor: "#6f96ff"
-    property color backgroundColor: "#0e1220"
+    property color backgroundColor: "#ffffff"
     // Indices into the imported mesh list (depth-first glTF order); resolved on
     // the C++ side because RuntimeLoader drops node names.
     property var highlightIndices: []
     // Model bounding box supplied by C++ (RuntimeLoader reports zero bounds for
     // this Draco-decoded asset, so we frame the camera from these instead).
-    property vector3d modelCenter: Qt.vector3d(0, 0, 0)
-    property real modelSize: 0
+    property vector3d modelCenter: Qt.vector3d(0.0, 1.619, -0.009)
+    property real modelSize: 0.181
     property bool autoRotate: true
     property bool ready: false
 
@@ -50,9 +50,10 @@ Item {
                 clipFar: 10000
             }
 
-            // Slow idle rotation that pauses while the user is dragging.
+            // Idle spin must stop while the user is dragging — otherwise it
+            // fights OrbitCameraController and the brain feels stuck/wrong.
             NumberAnimation on eulerRotation.y {
-                running: root.autoRotate && root.ready
+                running: root.autoRotate && root.ready && !orbit.inputsNeedProcessing
                 from: originNode.eulerRotation.y
                 to: originNode.eulerRotation.y + 360
                 duration: 44000
@@ -60,33 +61,38 @@ Item {
             }
         }
 
+        // Flat, illustrative lighting — one soft key and a weak fill so the
+        // cortex reads as a diagram, not a photoreal render.
         DirectionalLight {
-            eulerRotation.x: -35
-            eulerRotation.y: -35
-            brightness: 1.1
+            eulerRotation.x: -40
+            eulerRotation.y: -25
+            brightness: 0.85
+            ambientColor: Qt.rgba(0.55, 0.55, 0.58, 1)
         }
         DirectionalLight {
-            eulerRotation.x: -20
-            eulerRotation.y: 150
-            brightness: 0.55
-        }
-        DirectionalLight {
-            eulerRotation.x: 80
-            brightness: 0.35
+            eulerRotation.x: 20
+            eulerRotation.y: 140
+            brightness: 0.25
         }
 
         PrincipledMaterial {
             id: baseMaterial
             baseColor: root.baseColor
-            roughness: 0.62
+            roughness: 1.0
             metalness: 0.0
+            specularAmount: 0.0
+            // Slight self-illumination flattens the folds into a clay/diagram look.
+            emissiveFactor: Qt.vector3d(root.baseColor.r * 0.18,
+                                        root.baseColor.g * 0.18,
+                                        root.baseColor.b * 0.18)
         }
 
         PrincipledMaterial {
             id: glowMaterial
             baseColor: root.glowColor
-            roughness: 0.35
+            roughness: 1.0
             metalness: 0.0
+            specularAmount: 0.0
             emissiveFactor: Qt.vector3d(root.glowColor.r * 0.55,
                                         root.glowColor.g * 0.55,
                                         root.glowColor.b * 0.55)
@@ -94,16 +100,16 @@ Item {
                 running: root.ready
                 loops: Animation.Infinite
                 Vector3dAnimation {
-                    to: Qt.vector3d(root.glowColor.r * 0.95,
-                                    root.glowColor.g * 0.95,
-                                    root.glowColor.b * 0.95)
+                    to: Qt.vector3d(root.glowColor.r * 0.9,
+                                    root.glowColor.g * 0.9,
+                                    root.glowColor.b * 0.9)
                     duration: 900
                     easing.type: Easing.InOutSine
                 }
                 Vector3dAnimation {
-                    to: Qt.vector3d(root.glowColor.r * 0.4,
-                                    root.glowColor.g * 0.4,
-                                    root.glowColor.b * 0.4)
+                    to: Qt.vector3d(root.glowColor.r * 0.35,
+                                    root.glowColor.g * 0.35,
+                                    root.glowColor.b * 0.35)
                     duration: 900
                     easing.type: Easing.InOutSine
                 }
@@ -128,9 +134,16 @@ Item {
     }
 
     OrbitCameraController {
+        id: orbit
         anchors.fill: parent
         origin: originNode
         camera: camera
+        // Match drag direction to how the model turns.
+        xSpeed: 0.18
+        ySpeed: 0.18
+        xInvert: false
+        yInvert: true
+        panEnabled: false
     }
 
     onHighlightIndicesChanged: _applyHighlight()

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QUrl>
 #include <QVector>
 #include <QVector3D>
 #include <QWidget>
@@ -21,8 +22,18 @@ public:
 
 private slots:
     void applyTheme();
+    void onQuickStatusChanged();
 
 private:
+    void applySceneProperties();
+
     ThemeManager& themeManager_;
     QQuickWidget* quickWidget_ = nullptr;
+
+    bool sceneReady_ = false;
+    QUrl modelSource_{QStringLiteral("qrc:/models/brain.glb")};
+    QVector3D modelCenter_;
+    float modelSize_ = 0.181F;
+    bool hasBounds_ = false;
+    QVector<int> highlightIndices_;
 };

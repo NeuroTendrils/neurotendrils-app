@@ -14,6 +14,8 @@ public:
 
 signals:
     void educationRequested();
+    void roboticArmRequested();
+    void eegToTextRequested();
 
 private slots:
     void applyTheme();

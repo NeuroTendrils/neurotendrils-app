@@ -4,8 +4,10 @@
 #include "theme/ThemeManager.hpp"
 
 #include <QColor>
+#include <QQmlError>
 #include <QQuickItem>
 #include <QQuickWidget>
+#include <QVariantMap>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -18,42 +20,73 @@ BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
 
     quickWidget_ = new QQuickWidget(this);
     quickWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    connect(quickWidget_, &QQuickWidget::statusChanged, this, &BrainView::onQuickStatusChanged);
+
+    // Properties must be set before the scene loads; setSource is async and
+    // rootObject() is null until Ready, so late C++ writes are silently dropped.
+    QVariantMap initial;
+    initial.insert(QStringLiteral("modelSource"), modelSource_);
+    quickWidget_->setInitialProperties(initial);
     quickWidget_->setSource(QUrl(QStringLiteral("qrc:/qml/BrainScene.qml")));
     layout->addWidget(quickWidget_);
 
-    if (QQuickItem* scene = quickWidget_->rootObject()) {
-        scene->setProperty("modelSource", QUrl(QStringLiteral("qrc:/models/brain.glb")));
-    }
-
-    applyTheme();
     connect(&themeManager_, &ThemeManager::themeChanged, this, &BrainView::applyTheme);
 }
 
-void BrainView::setModelBounds(const QVector3D& minimum, const QVector3D& maximum) {
-    QQuickItem* scene = quickWidget_->rootObject();
-    if (scene == nullptr) {
+void BrainView::onQuickStatusChanged() {
+    if (quickWidget_->status() != QQuickWidget::Ready) {
+        if (quickWidget_->status() == QQuickWidget::Error) {
+            for (const QQmlError& error : quickWidget_->errors()) {
+                qWarning("Brain scene failed to load: %s", qPrintable(error.toString()));
+            }
+        }
         return;
     }
-    const QVector3D center = (minimum + maximum) * 0.5F;
+
+    sceneReady_ = true;
+    applySceneProperties();
+    applyTheme();
+}
+
+void BrainView::setModelBounds(const QVector3D& minimum, const QVector3D& maximum) {
+    modelCenter_ = (minimum + maximum) * 0.5F;
     const QVector3D span = maximum - minimum;
-    const float size = std::max({span.x(), span.y(), span.z()});
-    scene->setProperty("modelCenter", center);
-    scene->setProperty("modelSize", size);
+    modelSize_ = std::max({span.x(), span.y(), span.z()});
+    hasBounds_ = modelSize_ > 0.0F;
+    applySceneProperties();
 }
 
 void BrainView::setHighlightIndices(const QVector<int>& modelIndices) {
-    if (QQuickItem* scene = quickWidget_->rootObject()) {
-        QVariantList indices;
-        indices.reserve(modelIndices.size());
-        for (int index : modelIndices) {
-            indices.append(index);
-        }
-        scene->setProperty("highlightIndices", indices);
-    }
+    highlightIndices_ = modelIndices;
+    applySceneProperties();
 }
 
 void BrainView::clearHighlight() {
     setHighlightIndices({});
+}
+
+void BrainView::applySceneProperties() {
+    if (!sceneReady_) {
+        return;
+    }
+
+    QQuickItem* scene = quickWidget_->rootObject();
+    if (scene == nullptr) {
+        return;
+    }
+
+    scene->setProperty("modelSource", modelSource_);
+    if (hasBounds_) {
+        scene->setProperty("modelCenter", modelCenter_);
+        scene->setProperty("modelSize", modelSize_);
+    }
+
+    QVariantList indices;
+    indices.reserve(highlightIndices_.size());
+    for (int index : highlightIndices_) {
+        indices.append(index);
+    }
+    scene->setProperty("highlightIndices", indices);
 }
 
 void BrainView::applyTheme() {
@@ -63,11 +96,11 @@ void BrainView::applyTheme() {
     }
 
     const ColorPalette colors = themeManager_.palette();
+    const QColor cortex = themeManager_.effectiveTheme() == Theme::Dark
+        ? QColor(QStringLiteral("#7a756c"))
+        : QColor(QStringLiteral("#b5aea0"));
 
-    // The 3D stage keeps a deep, fixed backdrop in both themes so the model
-    // reads with good contrast and the glow highlight stays vivid; a warm bone
-    // tone gives the cortex an anatomical, non-flat look.
-    scene->setProperty("backgroundColor", QColor(QStringLiteral("#0b0f1a")));
-    scene->setProperty("baseColor", QColor(QStringLiteral("#c8c2b6")));
+    scene->setProperty("backgroundColor", colors.backgroundElevated);
+    scene->setProperty("baseColor", cortex);
     scene->setProperty("glowColor", colors.accent);
 }
