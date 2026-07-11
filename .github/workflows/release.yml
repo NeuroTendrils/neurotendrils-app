@@ -11,9 +11,7 @@ permissions:
 env:
   QT_VERSION: "6.11.1"
   QT_VERSION_WINDOWS: "6.10.3"
-  # Quick3D depends on ShaderTools at configure time; aqt does not always pull
-  # it in automatically when only qtquick3d is listed.
-  QT_MODULES: "qtquick3d qtshadertools"
+  QT_MODULES: "qtquick3d qtshadertools qtquicktimeline"
 
 jobs:
   verify-version:
@@ -51,7 +49,7 @@ jobs:
           version: ${{ env.QT_VERSION_WINDOWS }}
           modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION_WINDOWS }}-quick3d-shader
+          cache-key-prefix: install-qt-${{ env.QT_VERSION_WINDOWS }}-quick3d-deps
 
       - name: Verify Qt
         shell: bash
@@ -61,6 +59,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -112,7 +111,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-shader
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-deps
 
       - name: Verify Qt
         run: |
@@ -121,6 +120,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -172,7 +172,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-shader
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-deps
 
       - name: Verify Qt
         run: |
@@ -181,6 +181,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -244,7 +245,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           modules: ${{ env.QT_MODULES }}
           cache: true
-          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-shader
+          cache-key-prefix: install-qt-${{ env.QT_VERSION }}-quick3d-deps
 
       - name: Verify Qt
         run: |
@@ -253,6 +254,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3D/Qt6Quick3DConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
