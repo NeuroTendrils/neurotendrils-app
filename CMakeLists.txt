@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(neurotendrils-app VERSION 0.1.0 LANGUAGES CXX)
+project(NeuroTendrils VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,11 +19,14 @@ else()
     find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets)
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/StripLegacyAgl.cmake")
+nt_strip_legacy_agl()
+
 if(Qt6_VERSION VERSION_LESS "6.8.0")
     message(FATAL_ERROR "Qt ${Qt6_VERSION} found but 6.8+ is required for QStyleHints::setColorScheme")
 endif()
 
-qt_add_executable(neurotendrils-app
+qt_add_executable(NeuroTendrils
     src/main.cpp
     src/theme/ColorPalette.cpp
     src/theme/ThemeManager.cpp
@@ -42,22 +45,24 @@ qt_add_executable(neurotendrils-app
     resources/resources.qrc
 )
 
-target_link_libraries(neurotendrils-app PRIVATE Qt6::Widgets)
+target_link_libraries(NeuroTendrils PRIVATE Qt6::Widgets)
 
-target_compile_definitions(neurotendrils-app PRIVATE
+target_compile_definitions(NeuroTendrils PRIVATE
     NT_APP_VERSION="${PROJECT_VERSION}"
 )
 
-target_include_directories(neurotendrils-app PRIVATE include)
+target_include_directories(NeuroTendrils PRIVATE include)
 
-set_target_properties(neurotendrils-app PROPERTIES
+set_target_properties(NeuroTendrils PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_NAME "NeuroTendrils"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.neurotendrils.app"
 )
 
 if(APPLE)
     set(app_icon "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/AppIcon.icns")
     set_source_files_properties("${app_icon}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    target_sources(neurotendrils-app PRIVATE "${app_icon}")
-    set_target_properties(neurotendrils-app PROPERTIES MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
+    target_sources(NeuroTendrils PRIVATE "${app_icon}")
+    set_target_properties(NeuroTendrils PROPERTIES MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
 endif()

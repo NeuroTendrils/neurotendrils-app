@@ -2,8 +2,8 @@
 Type=Application
 Name=NeuroTendrils
 Comment=NeuroTendrils desktop app
-Exec=neurotendrils-app
+Exec=NeuroTendrils
 Terminal=false
 Categories=Utility;Science;
-StartupWMClass=neurotendrils-app
-Icon=neurotendrils
+StartupWMClass=NeuroTendrils
+Icon=NeuroTendrils
