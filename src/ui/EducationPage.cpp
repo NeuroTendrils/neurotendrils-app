@@ -54,10 +54,10 @@ EducationPage::EducationPage(ThemeManager& themeManager, const AppConfig& config
     layout->setSpacing(0);
 
     stack_ = new QStackedWidget(this);
-    workspace_ = new ArmWorkspace(themeManager_, config_, this);
-
+    // ArmWorkspace (and its Quick3D brain) is created only when the user enters
+    // the interactive stage — constructing it while this page is still hidden
+    // in MainWindow's stack leaves the 3D view without a usable surface.
     stack_->addWidget(buildOnboarding());
-    stack_->addWidget(workspace_);
     layout->addWidget(stack_);
 
     updateStep();
@@ -172,6 +172,10 @@ void EducationPage::updateStep() {
 }
 
 void EducationPage::enterWorkspace() {
+    if (workspace_ == nullptr) {
+        workspace_ = new ArmWorkspace(themeManager_, config_, this);
+        stack_->addWidget(workspace_);
+    }
     stack_->setCurrentWidget(workspace_);
 }
 

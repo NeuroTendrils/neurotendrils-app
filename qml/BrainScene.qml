@@ -23,9 +23,38 @@ Item {
     property real modelSize: 0.181
     property bool autoRotate: true
     property bool ready: false
+    property string loadError: ""
 
     // Loaded Model nodes, discovered once the asset finishes importing.
     property var _models: []
+
+    Rectangle {
+        anchors.fill: parent
+        color: root.backgroundColor
+        visible: !root.ready
+        z: 10
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 8
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: root.loadError.length > 0 ? "Brain failed to load" : "Loading atlas…"
+                color: "#97a0b5"
+                font.pixelSize: 14
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Math.min(root.width - 48, 420)
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                visible: root.loadError.length > 0
+                text: root.loadError
+                color: "#97a0b5"
+                font.pixelSize: 12
+            }
+        }
+    }
 
     View3D {
         id: view
@@ -122,11 +151,14 @@ Item {
 
             onStatusChanged: {
                 if (status === RuntimeLoader.Success) {
+                    root.loadError = ""
                     root._collectModels()
                     root._normalizeToView()
                     root._applyHighlight()
                     root.ready = true
                 } else if (status === RuntimeLoader.Error) {
+                    root.loadError = errorString
+                    root.ready = false
                     console.warn("Brain model failed to load:", errorString)
                 }
             }

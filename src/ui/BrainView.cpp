@@ -1,12 +1,16 @@
 #include "ui/BrainView.hpp"
 
+#include "theme/AppFonts.hpp"
 #include "theme/ColorPalette.hpp"
 #include "theme/ThemeManager.hpp"
 
 #include <QColor>
+#include <QLabel>
 #include <QQmlError>
 #include <QQuickItem>
 #include <QQuickWidget>
+#include <QResizeEvent>
+#include <QShowEvent>
 #include <QVariantMap>
 #include <QVBoxLayout>
 
@@ -20,30 +24,85 @@ BrainView::BrainView(ThemeManager& themeManager, QWidget* parent)
 
     quickWidget_ = new QQuickWidget(this);
     quickWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    quickWidget_->setClearColor(themeManager_.palette().backgroundElevated);
     connect(quickWidget_, &QQuickWidget::statusChanged, this, &BrainView::onQuickStatusChanged);
-
-    // Properties must be set before the scene loads; setSource is async and
-    // rootObject() is null until Ready, so late C++ writes are silently dropped.
-    QVariantMap initial;
-    initial.insert(QStringLiteral("modelSource"), modelSource_);
-    quickWidget_->setInitialProperties(initial);
-    quickWidget_->setSource(QUrl(QStringLiteral("qrc:/qml/BrainScene.qml")));
     layout->addWidget(quickWidget_);
 
+    statusLabel_ = new QLabel(QStringLiteral("Loading atlas…"), quickWidget_);
+    statusLabel_->setFont(AppFonts::medium(13));
+    statusLabel_->setAlignment(Qt::AlignCenter);
+    statusLabel_->setAttribute(Qt::WA_TransparentForMouseEvents);
+    statusLabel_->setGeometry(quickWidget_->rect());
+
     connect(&themeManager_, &ThemeManager::themeChanged, this, &BrainView::applyTheme);
+    applyTheme();
+}
+
+void BrainView::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    ensureSceneLoaded();
+}
+
+void BrainView::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    if (statusLabel_ != nullptr && quickWidget_ != nullptr) {
+        statusLabel_->setGeometry(quickWidget_->rect());
+    }
+    // First layout pass often happens after construction while still hidden;
+    // once we have a real size and are visible, start the scene.
+    if (isVisible() && width() > 1 && height() > 1) {
+        ensureSceneLoaded();
+    }
+}
+
+void BrainView::ensureSceneLoaded() {
+    if (sceneRequested_ || quickWidget_ == nullptr) {
+        return;
+    }
+    if (!isVisible() || width() < 2 || height() < 2) {
+        return;
+    }
+
+    sceneRequested_ = true;
+    if (statusLabel_ != nullptr) {
+        statusLabel_->setText(QStringLiteral("Loading atlas…"));
+        statusLabel_->show();
+        statusLabel_->raise();
+    }
+
+    QVariantMap initial;
+    initial.insert(QStringLiteral("modelSource"), modelSource_);
+    if (hasBounds_) {
+        initial.insert(QStringLiteral("modelCenter"), modelCenter_);
+        initial.insert(QStringLiteral("modelSize"), modelSize_);
+    }
+    quickWidget_->setInitialProperties(initial);
+    quickWidget_->setSource(QUrl(QStringLiteral("qrc:/qml/BrainScene.qml")));
 }
 
 void BrainView::onQuickStatusChanged() {
-    if (quickWidget_->status() != QQuickWidget::Ready) {
-        if (quickWidget_->status() == QQuickWidget::Error) {
-            for (const QQmlError& error : quickWidget_->errors()) {
-                qWarning("Brain scene failed to load: %s", qPrintable(error.toString()));
-            }
+    if (quickWidget_->status() == QQuickWidget::Error) {
+        QStringList messages;
+        for (const QQmlError& error : quickWidget_->errors()) {
+            messages.append(error.toString());
+            qWarning("Brain scene failed to load: %s", qPrintable(error.toString()));
+        }
+        if (statusLabel_ != nullptr) {
+            statusLabel_->setText(QStringLiteral("Brain failed to load\n%1").arg(messages.join(QLatin1Char('\n'))));
+            statusLabel_->show();
+            statusLabel_->raise();
         }
         return;
     }
 
+    if (quickWidget_->status() != QQuickWidget::Ready) {
+        return;
+    }
+
     sceneReady_ = true;
+    if (statusLabel_ != nullptr) {
+        statusLabel_->hide();
+    }
     applySceneProperties();
     applyTheme();
 }
@@ -90,15 +149,24 @@ void BrainView::applySceneProperties() {
 }
 
 void BrainView::applyTheme() {
-    QQuickItem* scene = quickWidget_->rootObject();
-    if (scene == nullptr) {
-        return;
-    }
-
     const ColorPalette colors = themeManager_.palette();
     const QColor cortex = themeManager_.effectiveTheme() == Theme::Dark
         ? QColor(QStringLiteral("#7a756c"))
         : QColor(QStringLiteral("#b5aea0"));
+
+    if (quickWidget_ != nullptr) {
+        quickWidget_->setClearColor(colors.backgroundElevated);
+    }
+
+    if (statusLabel_ != nullptr) {
+        statusLabel_->setStyleSheet(QStringLiteral("color: %1; background: transparent;")
+            .arg(colors.foregroundMuted.name(QColor::HexRgb)));
+    }
+
+    QQuickItem* scene = quickWidget_ != nullptr ? quickWidget_->rootObject() : nullptr;
+    if (scene == nullptr) {
+        return;
+    }
 
     scene->setProperty("backgroundColor", colors.backgroundElevated);
     scene->setProperty("baseColor", cortex);
