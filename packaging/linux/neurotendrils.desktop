@@ -6,3 +6,4 @@ Exec=neurotendrils-app
 Terminal=false
 Categories=Utility;Science;
 StartupWMClass=neurotendrils-app
+Icon=neurotendrils

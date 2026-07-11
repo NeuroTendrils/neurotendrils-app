@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  QT_VERSION: "6.8.1"
+  QT_VERSION: "6.8.4"
 
 jobs:
   verify-version:
@@ -186,6 +186,7 @@ jobs:
             --appdir AppDir \
             -e build/neurotendrils-app \
             -d packaging/linux/neurotendrils.desktop \
+            -i packaging/linux/neurotendrils.png \
             --plugin qt \
             --output appimage
 
@@ -250,6 +251,7 @@ jobs:
             --appdir AppDir \
             -e build/neurotendrils-app \
             -d packaging/linux/neurotendrils.desktop \
+            -i packaging/linux/neurotendrils.png \
             --plugin qt \
             --output appimage
 

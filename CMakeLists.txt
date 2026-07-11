@@ -54,3 +54,10 @@ set_target_properties(neurotendrils-app PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
 )
+
+if(APPLE)
+    set(app_icon "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/AppIcon.icns")
+    set_source_files_properties("${app_icon}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    target_sources(neurotendrils-app PRIVATE "${app_icon}")
+    set_target_properties(neurotendrils-app PROPERTIES MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
+endif()
