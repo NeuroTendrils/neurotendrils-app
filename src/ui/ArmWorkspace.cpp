@@ -175,17 +175,18 @@ QWidget* ArmWorkspace::buildControlColumn() {
     controlColumnLayout_->setSpacing(14);
 
     auto* connectionBar = buildConnectionBar();
-    auto* motionControls = buildMotionControls();
+    motionCard_ = buildMotionControls();
     learningCard_ = buildLearningCard();
 
     connectionBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    motionControls->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    learningCard_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    motionCard_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    learningCard_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     learningCard_->setMinimumHeight(140);
+    learningCard_->setMaximumHeight(240);
 
     controlColumnLayout_->addWidget(connectionBar);
-    controlColumnLayout_->addWidget(motionControls);
-    controlColumnLayout_->addWidget(learningCard_, 1);
+    controlColumnLayout_->addWidget(motionCard_, 1);
+    controlColumnLayout_->addWidget(learningCard_, 0);
 
     return column;
 }
@@ -272,12 +273,12 @@ QWidget* ArmWorkspace::buildMotionControls() {
     heading->setFont(AppFonts::semibold(14));
     layout->addWidget(heading);
 
-    auto* grid = new QGridLayout();
-    grid->setHorizontalSpacing(8);
-    grid->setVerticalSpacing(6);
-    grid->setColumnMinimumWidth(0, 88);
-    grid->setColumnStretch(1, 1);
-    grid->setColumnStretch(2, 1);
+    motionGrid_ = new QGridLayout();
+    motionGrid_->setHorizontalSpacing(8);
+    motionGrid_->setVerticalSpacing(8);
+    motionGrid_->setColumnMinimumWidth(0, 88);
+    motionGrid_->setColumnStretch(1, 1);
+    motionGrid_->setColumnStretch(2, 1);
 
     int rowIndex = 0;
     for (const MotionGroup& group : config_.motionGroups()) {
@@ -285,7 +286,8 @@ QWidget* ArmWorkspace::buildMotionControls() {
         groupLabel->setObjectName(QStringLiteral("group-label"));
         groupLabel->setFont(AppFonts::medium(11));
         groupLabel->setWordWrap(true);
-        grid->addWidget(groupLabel, rowIndex, 0, Qt::AlignVCenter | Qt::AlignLeft);
+        motionGrid_->addWidget(groupLabel, rowIndex, 0, Qt::AlignVCenter | Qt::AlignLeft);
+        motionGrid_->setRowStretch(rowIndex, 1);
 
         int columnIndex = 1;
         for (const MotionCommand& command : group.commands) {
@@ -294,7 +296,7 @@ QWidget* ArmWorkspace::buildMotionControls() {
             button->setCursor(Qt::PointingHandCursor);
             button->setFont(AppFonts::semibold(12));
             button->setMinimumHeight(36);
-            button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             button->setToolTip(command.label);
 
             const MotionCommand captured = command;
@@ -313,16 +315,16 @@ QWidget* ArmWorkspace::buildMotionControls() {
 
             motionButtons_.append(button);
             if (group.commands.size() == 1) {
-                grid->addWidget(button, rowIndex, 1, 1, 2);
+                motionGrid_->addWidget(button, rowIndex, 1, 1, 2);
             } else {
-                grid->addWidget(button, rowIndex, columnIndex);
+                motionGrid_->addWidget(button, rowIndex, columnIndex);
             }
             ++columnIndex;
         }
         ++rowIndex;
     }
 
-    layout->addLayout(grid);
+    layout->addLayout(motionGrid_, 1);
 
     auto* hint = new QLabel(QStringLiteral("Hold a button to move; release to stop."), card);
     hint->setObjectName(QStringLiteral("panel-hint"));
@@ -375,7 +377,8 @@ QWidget* ArmWorkspace::buildLearningCard() {
     learnScroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     learnScroll_->setWidget(cardBody_);
     learnScroll_->setMinimumHeight(72);
-    // No max height; Learn expands to fill leftover column space on large windows.
+    learnScroll_->setMaximumHeight(120);
+    learnScroll_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     auto* navRow = new QHBoxLayout();
     navRow->setSpacing(8);
@@ -403,7 +406,7 @@ QWidget* ArmWorkspace::buildLearningCard() {
 
     layout->addLayout(headerRow);
     layout->addWidget(cardTitle_);
-    layout->addWidget(learnScroll_, 1);
+    layout->addWidget(learnScroll_, 0);
     layout->addLayout(navRow);
 
     return card;
@@ -475,7 +478,10 @@ void ArmWorkspace::updateResponsiveLayout() {
             controlColumn_->setMaximumWidth(QWIDGETSIZE_MAX);
         }
         if (learnScroll_ != nullptr) {
-            learnScroll_->setMaximumHeight(120);
+            learnScroll_->setMaximumHeight(96);
+        }
+        if (learningCard_ != nullptr) {
+            learningCard_->setMaximumHeight(220);
         }
     } else {
         rootLayout_->setDirection(QBoxLayout::LeftToRight);
@@ -497,11 +503,33 @@ void ArmWorkspace::updateResponsiveLayout() {
             controlColumn_->setMaximumWidth(QWIDGETSIZE_MAX);
         }
         if (learnScroll_ != nullptr) {
-            learnScroll_->setMaximumHeight(QWIDGETSIZE_MAX);
+            learnScroll_->setMaximumHeight(120);
+        }
+        if (learningCard_ != nullptr) {
+            learningCard_->setMaximumHeight(240);
         }
         if (controlColumnLayout_ != nullptr) {
             controlColumnLayout_->setSpacing(width() >= 1400 ? 18 : 14);
         }
+    }
+
+    updateMotionButtonSizes();
+}
+
+void ArmWorkspace::updateMotionButtonSizes() {
+    if (motionButtons_.isEmpty()) {
+        return;
+    }
+
+    // Extra vertical room goes to motion controls, not Learn.
+    const int buttonHeight = qBound(36, height() / 18, 64);
+    const int pointSize = buttonHeight >= 52 ? 14 : 12;
+    for (QPushButton* button : motionButtons_) {
+        button->setMinimumHeight(buttonHeight);
+        button->setFont(AppFonts::semibold(pointSize));
+    }
+    if (motionGrid_ != nullptr) {
+        motionGrid_->setVerticalSpacing(buttonHeight >= 48 ? 10 : 8);
     }
 }
 

@@ -11,6 +11,7 @@ class BrainView;
 class ThemeManager;
 class QBoxLayout;
 class QFrame;
+class QGridLayout;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -43,6 +44,7 @@ private:
     QVariantList buildRegionLabelData() const;
     void updateResponsiveLayout();
     void layoutBrainBorder();
+    void updateMotionButtonSizes();
 
     void connectToArm();
     void beginMotion(const MotionCommand& command);
@@ -65,6 +67,8 @@ private:
     QScrollArea* controlScroll_ = nullptr;
     QWidget* controlColumn_ = nullptr;
     QVBoxLayout* controlColumnLayout_ = nullptr;
+    QWidget* motionCard_ = nullptr;
+    QGridLayout* motionGrid_ = nullptr;
     QWidget* learningCard_ = nullptr;
     QScrollArea* learnScroll_ = nullptr;
     BrainView* brainView_ = nullptr;
