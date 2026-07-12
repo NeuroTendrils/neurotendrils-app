@@ -80,26 +80,20 @@ void SettingsMenu::applyTheme() {
 
     button_->setIcon(tintedSvgIcon(QStringLiteral(":/icons/settings.svg"), iconColor, kIconSize));
 
-    const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
-
     button_->setStyleSheet(QStringLiteral(
         "QPushButton#settings-button {"
         "  background: transparent;"
         "  border: none;"
-        "  border-radius: 8px;"
+        "  outline: none;"
         "  padding: 0;"
         "}"
-        "QPushButton#settings-button:hover {"
-        "  background-color: %1;"
-        "}"
-        "QPushButton#settings-button:pressed {"
-        "  background-color: %1;"
-        "}"
+        "QPushButton#settings-button:hover,"
+        "QPushButton#settings-button:pressed,"
         "QPushButton#settings-button:focus {"
+        "  background: transparent;"
+        "  border: none;"
         "  outline: none;"
-        "  background-color: %1;"
-        "}")
-        .arg(accentSubtle));
+        "}"));
 }
 
 void SettingsMenu::toggleSettings() {

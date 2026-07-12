@@ -13,6 +13,7 @@
 #include "ui/RoboticArmPage.hpp"
 #endif
 
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QPushButton>
@@ -25,6 +26,7 @@ namespace {
 
 constexpr int kShellPadding = 16;
 constexpr int kTopBarHeight = 56;
+constexpr int kBackButtonPointSize = 13;
 
 } // namespace
 
@@ -57,8 +59,11 @@ MainWindow::MainWindow(ThemeManager& themeManager, const AppConfig& config, QWid
     backButton_ = new QPushButton(QStringLiteral("‹  Home"), topBar_);
     backButton_->setObjectName(QStringLiteral("back-button"));
     backButton_->setCursor(Qt::PointingHandCursor);
-    backButton_->setFont(AppFonts::semibold(13));
+    backButton_->setFont(AppFonts::semibold(kBackButtonPointSize));
+    backButton_->setFlat(true);
+    backButton_->setFocusPolicy(Qt::NoFocus);
     backButton_->hide();
+    backButton_->installEventFilter(this);
     connect(backButton_, &QPushButton::clicked, this, &MainWindow::showHome);
     topBarLayout->addWidget(backButton_);
 
@@ -129,6 +134,17 @@ void MainWindow::resizeEvent(QResizeEvent* event) {
     layoutOverlay();
 }
 
+bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == backButton_) {
+        if (event->type() == QEvent::Enter) {
+            backButton_->setFont(AppFonts::bold(kBackButtonPointSize));
+        } else if (event->type() == QEvent::Leave) {
+            backButton_->setFont(AppFonts::semibold(kBackButtonPointSize));
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
 void MainWindow::layoutOverlay() {
     if (settingsOverlay_ != nullptr && shell_ != nullptr) {
         settingsOverlay_->setGeometry(shell_->rect());
@@ -139,8 +155,6 @@ void MainWindow::applyTheme() {
     const ColorPalette colors = themeManager_.palette();
     const QString background = colors.background.name(QColor::HexRgb);
     const QString foreground = colors.foreground.name(QColor::HexRgb);
-    const QString accent = colors.accent.name(QColor::HexRgb);
-    const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
 
     setStyleSheet(QStringLiteral("QMainWindow { background-color: %1; }").arg(background));
 
@@ -158,10 +172,17 @@ void MainWindow::applyTheme() {
             "  background: transparent;"
             "  color: %1;"
             "  border: none;"
+            "  outline: none;"
             "  padding: 6px 10px;"
-            "  border-radius: 8px;"
             "}"
-            "QPushButton#back-button:hover { background-color: %2; color: %3; }")
-            .arg(foreground, accentSubtle, accent));
+            "QPushButton#back-button:hover,"
+            "QPushButton#back-button:pressed,"
+            "QPushButton#back-button:focus {"
+            "  background: transparent;"
+            "  color: %1;"
+            "  border: none;"
+            "  outline: none;"
+            "}")
+                                       .arg(foreground));
     }
 }

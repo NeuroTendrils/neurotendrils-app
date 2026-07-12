@@ -20,12 +20,14 @@ signals:
 private slots:
     void applyTheme();
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+
 private:
     void buildUi();
     void updateWordmarkFont();
     QString navButtonStylesheet() const;
-
-    void resizeEvent(QResizeEvent* event) override;
 
     ThemeManager& themeManager_;
     QLabel* neuroLabel_ = nullptr;

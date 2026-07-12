@@ -4,6 +4,7 @@
 #include "theme/ColorPalette.hpp"
 #include "theme/ThemeManager.hpp"
 
+#include <QEvent>
 #include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -21,6 +22,7 @@ constexpr int kNavButtonMinWidth = 240;
 constexpr int kNavButtonMaxWidth = 320;
 constexpr int kNavButtonHeight = 56;
 constexpr int kNavButtonSpacing = 16;
+constexpr int kNavButtonPointSize = 16;
 
 constexpr int kWordmarkToButtonsSpacing = 48;
 
@@ -32,7 +34,8 @@ QPushButton* createNavButton(const QString& label, const QString& description, Q
     button->setFixedHeight(kNavButtonHeight);
     button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     button->setCursor(Qt::PointingHandCursor);
-    button->setFont(AppFonts::semibold(16));
+    button->setFont(AppFonts::semibold(kNavButtonPointSize));
+    button->setFocusPolicy(Qt::NoFocus);
     button->setAccessibleName(label);
     button->setAccessibleDescription(description);
     button->setToolTip(description);
@@ -114,8 +117,25 @@ void HomePage::buildUi() {
     connect(eegToTextButton_, &QPushButton::clicked, this, &HomePage::eegToTextRequested);
     connect(educationButton_, &QPushButton::clicked, this, &HomePage::educationRequested);
 
+    for (QPushButton* button : {roboticArmButton_, eegToTextButton_, educationButton_}) {
+        button->installEventFilter(this);
+    }
+
     rootLayout->addLayout(buttonColumn);
     rootLayout->addStretch(4);
+}
+
+bool HomePage::eventFilter(QObject* watched, QEvent* event) {
+    auto* button = qobject_cast<QPushButton*>(watched);
+    if (button != nullptr
+        && (button == roboticArmButton_ || button == eegToTextButton_ || button == educationButton_)) {
+        if (event->type() == QEvent::Enter) {
+            button->setFont(AppFonts::bold(kNavButtonPointSize));
+        } else if (event->type() == QEvent::Leave) {
+            button->setFont(AppFonts::semibold(kNavButtonPointSize));
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void HomePage::applyTheme() {
@@ -151,9 +171,6 @@ QString HomePage::navButtonStylesheet() const {
     const QString elevated = colors.backgroundElevated.name(QColor::HexRgb);
     const QString foreground = colors.foreground.name(QColor::HexRgb);
     const QString border = colors.border.name(QColor::HexRgb);
-    const QString accent = colors.accent.name(QColor::HexRgb);
-    const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
-    const QString accentStrong = colors.accentStrong.name(QColor::HexRgb);
 
     return QStringLiteral(
                "QPushButton#nav-button {"
@@ -161,25 +178,18 @@ QString HomePage::navButtonStylesheet() const {
                "  color: %2;"
                "  border: 1px solid %3;"
                "  border-radius: 10px;"
+               "  outline: none;"
                "  padding: 0 20px;"
                "}"
-               "QPushButton#nav-button:hover {"
-               "  background-color: %4;"
-               "  border-color: %5;"
-               "  color: %5;"
-               "}"
-               "QPushButton#nav-button:pressed {"
-               "  background-color: %4;"
-               "  border-color: %6;"
-               "  color: %6;"
-               "}"
+               "QPushButton#nav-button:hover,"
+               "QPushButton#nav-button:pressed,"
                "QPushButton#nav-button:focus {"
-               "  border-color: %5;"
-               "}"
-               "QPushButton#nav-button:focus-visible {"
-               "  border-color: %5;"
+               "  background-color: %1;"
+               "  color: %2;"
+               "  border: 1px solid %3;"
+               "  outline: none;"
                "}")
-        .arg(elevated, foreground, border, accentSubtle, accent, accentStrong);
+        .arg(elevated, foreground, border);
 }
 
 void HomePage::updateWordmarkFont() {
