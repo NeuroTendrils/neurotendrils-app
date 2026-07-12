@@ -11,7 +11,8 @@ permissions:
 env:
   QT_VERSION: "6.11.1"
   QT_VERSION_WINDOWS: "6.10.3"
-  QT_MODULES: "qtquick3d qtshadertools qtquicktimeline qtsvg"
+  # qtsvg is a base archive in 6.11+, not an aqt module. Do not list it here.
+  QT_MODULES: "qtquick3d qtshadertools qtquicktimeline"
 
 jobs:
   verify-version:
@@ -60,6 +61,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Svg/Qt6SvgConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -130,6 +132,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Svg/Qt6SvgConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -201,6 +204,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Svg/Qt6SvgConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
@@ -285,6 +289,7 @@ jobs:
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6Quick3DRuntimeRender/Qt6Quick3DRuntimeRenderConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6ShaderTools/Qt6ShaderToolsConfig.cmake"
           test -f "$QT_ROOT_DIR/lib/cmake/Qt6QuickTimeline/Qt6QuickTimelineConfig.cmake"
+          test -f "$QT_ROOT_DIR/lib/cmake/Qt6Svg/Qt6SvgConfig.cmake"
           HEADER=$(find "$QT_ROOT_DIR" -name qstylehints.h | head -1)
           grep setColorScheme "$HEADER"
 
