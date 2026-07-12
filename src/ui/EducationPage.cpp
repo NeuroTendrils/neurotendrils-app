@@ -9,11 +9,16 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSettings>
+#include <QShowEvent>
+#include <QSizePolicy>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <array>
 
 namespace {
+
+constexpr char kIntroSeenKey[] = "education/introSeen";
 
 struct IntroStep {
     const char* eyebrow;
@@ -36,7 +41,7 @@ const std::array<IntroStep, 3> kIntroSteps = {{
     {"Step 3 of 3",
      "Live or simulated",
      "Simulation mode runs the full experience with no hardware attached. Switch to "
-     "Live and enter the arm's address to drive a real RoArm-M2 over the network. "
+     "Live, enter the arm's address, and press Connect to drive a real RoArm-M2. "
      "Either way, hold a button to move and release to stop."},
 }};
 
@@ -63,6 +68,18 @@ EducationPage::EducationPage(ThemeManager& themeManager, const AppConfig& config
     updateStep();
     connect(&themeManager_, &ThemeManager::themeChanged, this, &EducationPage::applyTheme);
     applyTheme();
+
+    // Defer workspace creation until this page is shown — a hidden Quick3D
+    // surface often never initializes.
+    openWorkspaceOnShow_ = QSettings().value(QLatin1String(kIntroSeenKey), false).toBool();
+}
+
+void EducationPage::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    if (openWorkspaceOnShow_) {
+        openWorkspaceOnShow_ = false;
+        enterWorkspace();
+    }
 }
 
 QWidget* EducationPage::buildOnboarding() {
@@ -71,7 +88,7 @@ QWidget* EducationPage::buildOnboarding() {
     page->setAttribute(Qt::WA_StyledBackground, true);
 
     auto* outer = new QHBoxLayout(page);
-    outer->setContentsMargins(48, 48, 48, 48);
+    outer->setContentsMargins(32, 32, 32, 32);
     outer->addStretch();
 
     auto* column = new QVBoxLayout();
@@ -81,7 +98,9 @@ QWidget* EducationPage::buildOnboarding() {
     auto* card = new QFrame(page);
     card->setObjectName(QStringLiteral("onboarding-card"));
     card->setAttribute(Qt::WA_StyledBackground, true);
-    card->setFixedWidth(560);
+    card->setMinimumWidth(280);
+    card->setMaximumWidth(560);
+    card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     auto* cardLayout = new QVBoxLayout(card);
     cardLayout->setContentsMargins(36, 32, 36, 28);
@@ -100,7 +119,7 @@ QWidget* EducationPage::buildOnboarding() {
     stepBody_->setObjectName(QStringLiteral("onboarding-body"));
     stepBody_->setFont(AppFonts::regular(15));
     stepBody_->setWordWrap(true);
-    stepBody_->setMinimumHeight(140);
+    stepBody_->setMinimumHeight(120);
     stepBody_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
     auto* controls = new QHBoxLayout();
@@ -153,7 +172,7 @@ QWidget* EducationPage::buildOnboarding() {
 
     column->addWidget(card);
     column->addStretch();
-    outer->addLayout(column);
+    outer->addLayout(column, 1);
     outer->addStretch();
 
     return page;
@@ -172,6 +191,7 @@ void EducationPage::updateStep() {
 }
 
 void EducationPage::enterWorkspace() {
+    QSettings().setValue(QLatin1String(kIntroSeenKey), true);
     if (workspace_ == nullptr) {
         workspace_ = new ArmWorkspace(themeManager_, config_, this);
         stack_->addWidget(workspace_);
@@ -186,7 +206,7 @@ void EducationPage::applyTheme() {
     const QString subtle = colors.backgroundSubtle.name(QColor::HexRgb);
     const QString fg = colors.foreground.name(QColor::HexRgb);
     const QString muted = colors.foregroundMuted.name(QColor::HexRgb);
-    const QString border = colors.border.name(QColor::HexArgb);
+    const QString border = colors.border.name(QColor::HexRgb);
     const QString accent = colors.accent.name(QColor::HexRgb);
     const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
     const QString accentFg = colors.accentForeground.name(QColor::HexRgb);

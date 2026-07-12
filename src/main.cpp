@@ -5,6 +5,7 @@
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QIcon>
 #include <QLibraryInfo>
 #include <QMessageBox>
 
@@ -14,6 +15,7 @@ int main(int argc, char* argv[]) {
     app.setApplicationDisplayName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationName(QStringLiteral("NeuroTendrils"));
     app.setOrganizationDomain(QStringLiteral("neurotendrils.com"));
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
 
     // RuntimeLoader needs the assimp asset importer plugin. Ensure both the
     // Qt install plugins dir and a bundled PlugIns/ folder are searchable.

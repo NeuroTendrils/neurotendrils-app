@@ -18,6 +18,7 @@
 #include <QStackedWidget>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QtGlobal>
 
 namespace {
 
@@ -38,13 +39,15 @@ QWidget* createThemePreview(Theme previewTheme) {
     auto* preview = new QWidget();
     preview->setObjectName(QStringLiteral("theme-card-preview"));
     preview->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    preview->setAttribute(Qt::WA_StyledBackground, true);
+    preview->setFixedHeight(52);
 
     if (previewTheme == Theme::Auto) {
-        preview->setFixedHeight(52);
         preview->setStyleSheet(QStringLiteral(
             "QWidget#theme-card-preview {"
-            "  border: 1px solid rgba(26, 31, 54, 0.18);"
-            "  border-radius: 7px;"
+            "  border: none;"
+            "  border-radius: 6px;"
+            "  background-color: transparent;"
             "}"));
 
         auto* splitLayout = new QHBoxLayout(preview);
@@ -52,6 +55,7 @@ QWidget* createThemePreview(Theme previewTheme) {
         splitLayout->setSpacing(0);
 
         auto* lightHalf = new QWidget();
+        lightHalf->setAttribute(Qt::WA_StyledBackground, true);
         lightHalf->setStyleSheet(QStringLiteral(
             "background-color: #ffffff;"
             "border-top-left-radius: 6px;"
@@ -59,6 +63,7 @@ QWidget* createThemePreview(Theme previewTheme) {
         lightHalf->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
         auto* darkHalf = new QWidget();
+        darkHalf->setAttribute(Qt::WA_StyledBackground, true);
         darkHalf->setStyleSheet(QStringLiteral(
             "background-color: #12172a;"
             "border-top-right-radius: 6px;"
@@ -72,19 +77,16 @@ QWidget* createThemePreview(Theme previewTheme) {
 
     const bool isLight = previewTheme == Theme::Light;
     const QString background = isLight ? QStringLiteral("#ffffff") : QStringLiteral("#12172a");
-    const QString border = isLight ? QStringLiteral("rgba(26, 31, 54, 0.15)")
-                                   : QStringLiteral("rgba(231, 234, 242, 0.12)");
     const QString accent = isLight ? QStringLiteral("#2b59c3") : QStringLiteral("#6f96ff");
     const QString mutedBar = isLight ? QStringLiteral("#e8ecf4") : QStringLiteral("#1e2640");
 
-    preview->setFixedHeight(52);
     preview->setStyleSheet(QStringLiteral(
                                "QWidget#theme-card-preview {"
                                "  background-color: %1;"
-                               "  border: 1px solid %2;"
-                               "  border-radius: 7px;"
+                               "  border: none;"
+                               "  border-radius: 6px;"
                                "}")
-                               .arg(background, border));
+                               .arg(background));
 
     auto* previewLayout = new QVBoxLayout(preview);
     previewLayout->setContentsMargins(10, 10, 10, 10);
@@ -104,13 +106,16 @@ QPushButton* createThemeCard(
     auto* card = new QPushButton(parent);
     card->setObjectName(QStringLiteral("theme-card"));
     card->setCheckable(true);
+    card->setFlat(true);
+    card->setAutoFillBackground(false);
     card->setCursor(Qt::PointingHandCursor);
     card->setFixedSize(118, 98);
+    card->setFocusPolicy(Qt::TabFocus);
     card->setAccessibleName(label);
     card->setAccessibleDescription(accessibleDescription);
 
     auto* cardLayout = new QVBoxLayout(card);
-    cardLayout->setContentsMargins(8, 8, 8, 8);
+    cardLayout->setContentsMargins(7, 7, 7, 7);
     cardLayout->setSpacing(6);
 
     auto* labelWidget = new QLabel(label, card);
@@ -416,9 +421,12 @@ void SettingsOverlay::layoutPanel() {
     }
 
     if (panel_ != nullptr) {
-        const int x = (width() - panel_->width()) / 2;
-        const int y = (height() - panel_->height()) / 2;
-        panel_->setGeometry(x, y, panel_->width(), panel_->height());
+        const int panelW = qMin(kPanelWidth, qMax(420, width() - 48));
+        const int panelH = qMin(kPanelHeight, qMax(320, height() - 48));
+        panel_->setFixedSize(panelW, panelH);
+        const int x = (width() - panelW) / 2;
+        const int y = (height() - panelH) / 2;
+        panel_->setGeometry(x, y, panelW, panelH);
     }
 }
 
@@ -503,10 +511,11 @@ QString SettingsOverlay::panelStylesheet() const {
                "  background: transparent;"
                "}"
                "QPushButton#theme-card {"
-               "  background-color: transparent;"
-               "  border: 2px solid %3;"
+               "  background-color: %2;"
+               "  border: 1px solid %3;"
                "  border-radius: 10px;"
                "  padding: 0;"
+               "  outline: none;"
                "}"
                "QPushButton#theme-card:hover {"
                "  border-color: %7;"
@@ -515,16 +524,19 @@ QString SettingsOverlay::panelStylesheet() const {
                "  border-color: %7;"
                "  background-color: %8;"
                "}"
+               "QPushButton#theme-card:focus {"
+               "  border-color: %7;"
+               "  outline: none;"
+               "}"
+               "QPushButton#theme-card:checked:focus {"
+               "  border-color: %7;"
+               "}"
                "QPushButton#theme-card QLabel#theme-card-label {"
                "  color: %5;"
                "  background: transparent;"
                "}"
                "QPushButton#theme-card:checked QLabel#theme-card-label {"
                "  color: %6;"
-               "}"
-               "QPushButton#theme-card:focus {"
-               "  border-color: %7;"
-               "  outline: none;"
                "}"
                "QLabel#info-app-name {"
                "  color: %6;"
@@ -548,7 +560,7 @@ QString SettingsOverlay::panelStylesheet() const {
         .arg(
             backdrop,
             colors.backgroundElevated.name(QColor::HexRgb),
-            colors.border.name(QColor::HexArgb),
+            colors.border.name(QColor::HexRgb),
             colors.backgroundSubtle.name(QColor::HexRgb),
             colors.foregroundMuted.name(QColor::HexRgb),
             colors.foreground.name(QColor::HexRgb),

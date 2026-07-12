@@ -8,6 +8,7 @@ class ArmWorkspace;
 class ThemeManager;
 class QLabel;
 class QPushButton;
+class QShowEvent;
 class QStackedWidget;
 
 // The Education experience: a short guided intro that explains the brain-
@@ -19,6 +20,9 @@ class EducationPage : public QWidget {
 
 public:
     EducationPage(ThemeManager& themeManager, const AppConfig& config, QWidget* parent = nullptr);
+
+protected:
+    void showEvent(QShowEvent* event) override;
 
 private slots:
     void applyTheme();
@@ -43,4 +47,5 @@ private:
     QPushButton* skipButton_ = nullptr;
 
     int step_ = 0;
+    bool openWorkspaceOnShow_ = false;
 };

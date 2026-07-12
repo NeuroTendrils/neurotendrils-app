@@ -56,4 +56,5 @@ private:
     Mode mode_ = Mode::Simulation;
     Link link_ = Link::Simulated;
     QString host_;
+    QString lastMessage_;
 };

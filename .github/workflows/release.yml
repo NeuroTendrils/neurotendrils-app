@@ -11,7 +11,7 @@ permissions:
 env:
   QT_VERSION: "6.11.1"
   QT_VERSION_WINDOWS: "6.10.3"
-  QT_MODULES: "qtquick3d qtshadertools qtquicktimeline"
+  QT_MODULES: "qtquick3d qtshadertools qtquicktimeline qtsvg"
 
 jobs:
   verify-version:

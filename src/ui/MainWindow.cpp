@@ -10,6 +10,7 @@
 #include "ui/WipPage.hpp"
 
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QStackedWidget>
@@ -28,6 +29,7 @@ MainWindow::MainWindow(ThemeManager& themeManager, const AppConfig& config, QWid
     , themeManager_(themeManager)
     , config_(config) {
     setWindowTitle(QStringLiteral("NeuroTendrils"));
+    setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     resize(1280, 800);
     setMinimumSize(960, 640);
 

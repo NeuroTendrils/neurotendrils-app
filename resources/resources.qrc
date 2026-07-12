@@ -2,6 +2,7 @@
 <RCC version="1.0">
     <qresource prefix="/">
         <file alias="icons/settings.svg">icons/settings.svg</file>
+        <file alias="icons/app.png">icons/app.png</file>
         <file alias="fonts/Geist-Regular.ttf">fonts/Geist-Regular.ttf</file>
         <file alias="fonts/Geist-SemiBold.ttf">fonts/Geist-SemiBold.ttf</file>
         <file alias="fonts/Geist-Bold.ttf">fonts/Geist-Bold.ttf</file>

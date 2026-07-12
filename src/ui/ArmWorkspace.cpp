@@ -5,26 +5,79 @@
 #include "theme/ThemeManager.hpp"
 #include "ui/BrainView.hpp"
 
+#include <QBoxLayout>
+#include <QColor>
+#include <QEvent>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QPushButton>
+#include <QResizeEvent>
+#include <QScrollArea>
+#include <QSizePolicy>
 #include <QTimer>
+#include <QVariantMap>
 #include <QVBoxLayout>
 
 namespace {
 
-constexpr int kControlColumnWidth = 400;
+constexpr int kControlColumnMinWidth = 280;
+constexpr int kControlColumnMaxWidthWide = 520;
+constexpr int kWideBreakpoint = 1100;
 constexpr int kCardRotateMs = 9000;
 constexpr int kHighlightHoldMs = 5000;
+constexpr int kBrainMinHeightStacked = 220;
+constexpr qreal kBrainCardRadius = 16.0;
 
 const char* kIdleRegionTitle = "Hold a control to activate";
-const char* kIdleRegionDetail =
-    "Each motion maps to the cortical area a brain-computer interface would decode.";
 
 } // namespace
+
+// Draws a clean rounded stroke on top of Quick3D / child widgets so stylesheet
+// borders aren't painted over at the corners.
+class RoundedBorderOverlay final : public QWidget {
+public:
+    explicit RoundedBorderOverlay(QWidget* parent = nullptr)
+        : QWidget(parent) {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_NoSystemBackground);
+    }
+
+    void setBorderColor(const QColor& color) {
+        if (color_ == color) {
+            return;
+        }
+        color_ = color;
+        update();
+    }
+
+    void setRadius(qreal radius) {
+        radius_ = radius;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setBrush(Qt::NoBrush);
+        QPen pen(color_, 1.0);
+        pen.setJoinStyle(Qt::RoundJoin);
+        pen.setCapStyle(Qt::RoundCap);
+        painter.setPen(pen);
+        painter.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), radius_, radius_);
+    }
+
+private:
+    QColor color_{QStringLiteral("#d8dde8")};
+    qreal radius_ = 16.0;
+};
 
 ArmWorkspace::ArmWorkspace(ThemeManager& themeManager, const AppConfig& config, QWidget* parent)
     : QWidget(parent)
@@ -37,49 +90,58 @@ ArmWorkspace::ArmWorkspace(ThemeManager& themeManager, const AppConfig& config, 
     arm_->setHost(config_.defaultArmHost());
     cards_ = config_.learningCards();
 
-    auto* rootLayout = new QHBoxLayout(this);
-    rootLayout->setContentsMargins(24, 24, 24, 24);
-    rootLayout->setSpacing(24);
+    rootLayout_ = new QBoxLayout(QBoxLayout::LeftToRight, this);
+    rootLayout_->setContentsMargins(24, 24, 24, 24);
+    rootLayout_->setSpacing(24);
 
-    auto* brainCard = new QFrame(this);
-    brainCard->setObjectName(QStringLiteral("brain-card"));
-    brainCard->setAttribute(Qt::WA_StyledBackground, true);
-    auto* brainLayout = new QVBoxLayout(brainCard);
+    brainCard_ = new QFrame(this);
+    brainCard_->setObjectName(QStringLiteral("brain-card"));
+    brainCard_->setAttribute(Qt::WA_StyledBackground, true);
+    brainCard_->setMinimumWidth(240);
+    brainCard_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto* brainLayout = new QVBoxLayout(brainCard_);
     brainLayout->setContentsMargins(0, 0, 0, 0);
     brainLayout->setSpacing(0);
 
-    brainView_ = new BrainView(themeManager_, brainCard);
+    brainView_ = new BrainView(themeManager_, brainCard_);
     brainView_->setModelBounds(config_.modelMin(), config_.modelMax());
+    brainView_->setRegionLabels(buildRegionLabelData());
     brainLayout->addWidget(brainView_, 1);
 
-    auto* readout = new QWidget(brainCard);
+    auto* readout = new QWidget(brainCard_);
     readout->setObjectName(QStringLiteral("brain-readout"));
     readout->setAttribute(Qt::WA_StyledBackground, true);
-    auto* readoutLayout = new QVBoxLayout(readout);
-    readoutLayout->setContentsMargins(20, 16, 20, 16);
-    readoutLayout->setSpacing(4);
-
-    auto* readoutLabel = new QLabel(QStringLiteral("ACTIVE REGION"), readout);
-    readoutLabel->setObjectName(QStringLiteral("readout-eyebrow"));
-    readoutLabel->setFont(AppFonts::semibold(10));
+    auto* readoutLayout = new QHBoxLayout(readout);
+    readoutLayout->setContentsMargins(16, 10, 16, 10);
+    readoutLayout->setSpacing(0);
 
     regionTitle_ = new QLabel(QLatin1String(kIdleRegionTitle), readout);
     regionTitle_->setObjectName(QStringLiteral("readout-title"));
-    regionTitle_->setFont(AppFonts::semibold(16));
-
-    regionDetail_ = new QLabel(QLatin1String(kIdleRegionDetail), readout);
-    regionDetail_->setObjectName(QStringLiteral("readout-detail"));
-    regionDetail_->setFont(AppFonts::regular(12));
-    regionDetail_->setWordWrap(true);
-
-    readoutLayout->addWidget(readoutLabel);
-    readoutLayout->addWidget(regionTitle_);
-    readoutLayout->addWidget(regionDetail_);
+    regionTitle_->setFont(AppFonts::medium(13));
+    regionTitle_->setWordWrap(false);
+    regionTitle_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    readoutLayout->addWidget(regionTitle_, 1);
 
     brainLayout->addWidget(readout);
 
-    rootLayout->addWidget(brainCard, 3);
-    rootLayout->addWidget(buildControlColumn(), 2);
+    // Paint the rounded stroke above Quick3D so corners stay continuous.
+    brainBorder_ = new RoundedBorderOverlay(brainCard_);
+    brainBorder_->setRadius(kBrainCardRadius);
+    brainBorder_->raise();
+    brainCard_->installEventFilter(this);
+
+    controlScroll_ = new QScrollArea(this);
+    controlScroll_->setObjectName(QStringLiteral("control-scroll"));
+    controlScroll_->setWidgetResizable(true);
+    controlScroll_->setFrameShape(QFrame::NoFrame);
+    controlScroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    controlScroll_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+
+    controlColumn_ = buildControlColumn();
+    controlScroll_->setWidget(controlColumn_);
+
+    rootLayout_->addWidget(brainCard_, 3);
+    rootLayout_->addWidget(controlScroll_, 2);
 
     connect(arm_, &RoArmController::linkChanged, this, &ArmWorkspace::onLinkChanged);
 
@@ -99,45 +161,46 @@ ArmWorkspace::ArmWorkspace(ThemeManager& themeManager, const AppConfig& config, 
     connect(&themeManager_, &ThemeManager::themeChanged, this, &ArmWorkspace::applyTheme);
     applyTheme();
     onLinkChanged(arm_->link(), QStringLiteral("Simulation mode"));
+    updateResponsiveLayout();
 }
 
 QWidget* ArmWorkspace::buildControlColumn() {
-    auto* column = new QWidget(this);
+    auto* column = new QWidget();
     column->setObjectName(QStringLiteral("control-column"));
-    column->setFixedWidth(kControlColumnWidth);
+    column->setMinimumWidth(kControlColumnMinWidth);
+    column->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    auto* layout = new QVBoxLayout(column);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(18);
+    controlColumnLayout_ = new QVBoxLayout(column);
+    controlColumnLayout_->setContentsMargins(0, 0, 4, 0);
+    controlColumnLayout_->setSpacing(14);
 
     auto* connectionBar = buildConnectionBar();
     auto* motionControls = buildMotionControls();
-    auto* learningCard = buildLearningCard();
+    learningCard_ = buildLearningCard();
 
-    // Connection and motion cards keep their natural height; the learning card
-    // absorbs any extra vertical space so nothing gets squeezed.
     connectionBar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     motionControls->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    learningCard->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    learningCard_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    learningCard_->setMinimumHeight(140);
 
-    layout->addWidget(connectionBar);
-    layout->addWidget(motionControls);
-    layout->addWidget(learningCard, 1);
+    controlColumnLayout_->addWidget(connectionBar);
+    controlColumnLayout_->addWidget(motionControls);
+    controlColumnLayout_->addWidget(learningCard_, 1);
 
     return column;
 }
 
 QWidget* ArmWorkspace::buildConnectionBar() {
-    auto* card = new QFrame(this);
+    auto* card = new QFrame();
     card->setObjectName(QStringLiteral("panel-card"));
     card->setAttribute(Qt::WA_StyledBackground, true);
 
     auto* layout = new QVBoxLayout(card);
-    layout->setContentsMargins(18, 16, 18, 16);
-    layout->setSpacing(12);
+    layout->setContentsMargins(16, 14, 16, 14);
+    layout->setSpacing(10);
 
     auto* statusRow = new QHBoxLayout();
-    statusRow->setSpacing(10);
+    statusRow->setSpacing(8);
 
     statusDot_ = new QLabel(card);
     statusDot_->setObjectName(QStringLiteral("status-dot"));
@@ -145,13 +208,15 @@ QWidget* ArmWorkspace::buildConnectionBar() {
 
     statusText_ = new QLabel(QStringLiteral("Simulation mode"), card);
     statusText_->setObjectName(QStringLiteral("status-text"));
-    statusText_->setFont(AppFonts::medium(13));
+    statusText_->setFont(AppFonts::medium(12));
+    statusText_->setWordWrap(true);
 
     modeButton_ = new QPushButton(QStringLiteral("Simulation"), card);
     modeButton_->setObjectName(QStringLiteral("mode-button"));
     modeButton_->setCheckable(true);
     modeButton_->setCursor(Qt::PointingHandCursor);
     modeButton_->setFont(AppFonts::semibold(12));
+    modeButton_->setToolTip(QStringLiteral("Toggle between simulation and a live RoArm"));
     connect(modeButton_, &QPushButton::clicked, this, &ArmWorkspace::onModeToggled);
 
     statusRow->addWidget(statusDot_);
@@ -159,22 +224,30 @@ QWidget* ArmWorkspace::buildConnectionBar() {
     statusRow->addWidget(modeButton_);
 
     auto* hostRow = new QHBoxLayout();
-    hostRow->setSpacing(10);
+    hostRow->setSpacing(8);
 
     hostEdit_ = new QLineEdit(config_.defaultArmHost(), card);
     hostEdit_->setObjectName(QStringLiteral("host-edit"));
-    hostEdit_->setFont(AppFonts::regular(13));
-    hostEdit_->setPlaceholderText(QStringLiteral("RoArm address"));
+    hostEdit_->setFont(AppFonts::regular(12));
+    hostEdit_->setPlaceholderText(QStringLiteral("e.g. 192.168.4.1"));
+    hostEdit_->setClearButtonEnabled(true);
     hostEdit_->setEnabled(false);
+    hostEdit_->setToolTip(QStringLiteral("RoArm IP address or hostname"));
 
     connectButton_ = new QPushButton(QStringLiteral("Connect"), card);
     connectButton_->setObjectName(QStringLiteral("connect-button"));
     connectButton_->setCursor(Qt::PointingHandCursor);
     connectButton_->setFont(AppFonts::semibold(12));
     connectButton_->setEnabled(false);
-    connect(connectButton_, &QPushButton::clicked, this, [this]() {
-        arm_->setHost(hostEdit_->text().trimmed());
-        arm_->probe();
+    connectButton_->setDefault(true);
+    connect(connectButton_, &QPushButton::clicked, this, &ArmWorkspace::connectToArm);
+    connect(hostEdit_, &QLineEdit::returnPressed, this, &ArmWorkspace::connectToArm);
+    connect(hostEdit_, &QLineEdit::textEdited, this, [this](const QString&) {
+        if (modeButton_ != nullptr && modeButton_->isChecked()
+            && arm_ != nullptr && arm_->link() == RoArmController::Link::Connected) {
+            statusText_->setText(QStringLiteral("Address changed — press Connect"));
+            connectButton_->setText(QStringLiteral("Connect"));
+        }
     });
 
     hostRow->addWidget(hostEdit_, 1);
@@ -186,25 +259,23 @@ QWidget* ArmWorkspace::buildConnectionBar() {
 }
 
 QWidget* ArmWorkspace::buildMotionControls() {
-    auto* card = new QFrame(this);
+    auto* card = new QFrame();
     card->setObjectName(QStringLiteral("panel-card"));
     card->setAttribute(Qt::WA_StyledBackground, true);
 
     auto* layout = new QVBoxLayout(card);
-    layout->setContentsMargins(18, 16, 18, 16);
-    layout->setSpacing(12);
+    layout->setContentsMargins(16, 14, 16, 14);
+    layout->setSpacing(10);
 
     auto* heading = new QLabel(QStringLiteral("Motion"), card);
     heading->setObjectName(QStringLiteral("panel-heading"));
-    heading->setFont(AppFonts::semibold(15));
+    heading->setFont(AppFonts::semibold(14));
     layout->addWidget(heading);
 
-    // One row per cortical region: a fixed-width region label on the left, then
-    // its motion buttons. Compact and keeps the whole panel on screen.
     auto* grid = new QGridLayout();
-    grid->setHorizontalSpacing(10);
-    grid->setVerticalSpacing(8);
-    grid->setColumnMinimumWidth(0, 120);
+    grid->setHorizontalSpacing(8);
+    grid->setVerticalSpacing(6);
+    grid->setColumnMinimumWidth(0, 88);
     grid->setColumnStretch(1, 1);
     grid->setColumnStretch(2, 1);
 
@@ -212,7 +283,8 @@ QWidget* ArmWorkspace::buildMotionControls() {
     for (const MotionGroup& group : config_.motionGroups()) {
         auto* groupLabel = new QLabel(group.title, card);
         groupLabel->setObjectName(QStringLiteral("group-label"));
-        groupLabel->setFont(AppFonts::medium(12));
+        groupLabel->setFont(AppFonts::medium(11));
+        groupLabel->setWordWrap(true);
         grid->addWidget(groupLabel, rowIndex, 0, Qt::AlignVCenter | Qt::AlignLeft);
 
         int columnIndex = 1;
@@ -220,8 +292,9 @@ QWidget* ArmWorkspace::buildMotionControls() {
             auto* button = new QPushButton(command.shortLabel, card);
             button->setObjectName(QStringLiteral("motion-button"));
             button->setCursor(Qt::PointingHandCursor);
-            button->setFont(AppFonts::semibold(13));
-            button->setFixedHeight(40);
+            button->setFont(AppFonts::semibold(12));
+            button->setMinimumHeight(36);
+            button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
             button->setToolTip(command.label);
 
             const MotionCommand captured = command;
@@ -239,7 +312,6 @@ QWidget* ArmWorkspace::buildMotionControls() {
             }
 
             motionButtons_.append(button);
-            // A lone one-shot control (Reset) spans both button columns.
             if (group.commands.size() == 1) {
                 grid->addWidget(button, rowIndex, 1, 1, 2);
             } else {
@@ -262,12 +334,12 @@ QWidget* ArmWorkspace::buildMotionControls() {
 }
 
 QWidget* ArmWorkspace::buildLearningCard() {
-    auto* card = new QFrame(this);
+    auto* card = new QFrame();
     card->setObjectName(QStringLiteral("panel-card"));
     card->setAttribute(Qt::WA_StyledBackground, true);
 
     auto* layout = new QVBoxLayout(card);
-    layout->setContentsMargins(18, 16, 18, 16);
+    layout->setContentsMargins(16, 14, 16, 14);
     layout->setSpacing(10);
 
     auto* headerRow = new QHBoxLayout();
@@ -289,25 +361,35 @@ QWidget* ArmWorkspace::buildLearningCard() {
     cardTitle_->setFont(AppFonts::semibold(15));
     cardTitle_->setWordWrap(true);
 
-    cardBody_ = new QLabel(card);
+    cardBody_ = new QLabel();
     cardBody_->setObjectName(QStringLiteral("card-body"));
     cardBody_->setFont(AppFonts::regular(13));
     cardBody_->setWordWrap(true);
     cardBody_->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    cardBody_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    learnScroll_ = new QScrollArea(card);
+    learnScroll_->setObjectName(QStringLiteral("learn-scroll"));
+    learnScroll_->setWidgetResizable(true);
+    learnScroll_->setFrameShape(QFrame::NoFrame);
+    learnScroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    learnScroll_->setWidget(cardBody_);
+    learnScroll_->setMinimumHeight(72);
+    // No max height — Learn expands to fill leftover column space on large windows.
 
     auto* navRow = new QHBoxLayout();
-    navRow->setSpacing(10);
+    navRow->setSpacing(8);
 
     auto* prev = new QPushButton(QStringLiteral("‹"), card);
     prev->setObjectName(QStringLiteral("card-nav"));
     prev->setCursor(Qt::PointingHandCursor);
-    prev->setFixedSize(34, 30);
+    prev->setFixedSize(34, 28);
     connect(prev, &QPushButton::clicked, this, [this]() { advanceCard(-1); });
 
     auto* next = new QPushButton(QStringLiteral("›"), card);
     next->setObjectName(QStringLiteral("card-nav"));
     next->setCursor(Qt::PointingHandCursor);
-    next->setFixedSize(34, 30);
+    next->setFixedSize(34, 28);
     connect(next, &QPushButton::clicked, this, [this]() { advanceCard(1); });
 
     cardCounter_ = new QLabel(card);
@@ -321,16 +403,134 @@ QWidget* ArmWorkspace::buildLearningCard() {
 
     layout->addLayout(headerRow);
     layout->addWidget(cardTitle_);
-    layout->addWidget(cardBody_, 1);
+    layout->addWidget(learnScroll_, 1);
     layout->addLayout(navRow);
 
     return card;
 }
 
+QVariantList ArmWorkspace::buildRegionLabelData() const {
+    QVariantList labels;
+    labels.reserve(config_.regions().size());
+
+    for (const BrainRegion& region : config_.regions()) {
+        QStringList motionNames;
+        for (const MotionGroup& group : config_.motionGroups()) {
+            for (const MotionCommand& command : group.commands) {
+                if (command.regionId == region.id) {
+                    motionNames.append(command.shortLabel.isEmpty() ? command.label : command.shortLabel);
+                }
+            }
+        }
+
+        QVariantList indices;
+        indices.reserve(region.modelIndices.size());
+        for (int index : region.modelIndices) {
+            indices.append(index);
+        }
+
+        QVariantMap entry;
+        entry.insert(QStringLiteral("id"), region.id);
+        entry.insert(
+            QStringLiteral("title"),
+            region.shortLabel.isEmpty() ? region.label : region.shortLabel);
+        entry.insert(QStringLiteral("description"), region.description);
+        entry.insert(QStringLiteral("color"), region.color.name(QColor::HexRgb));
+        entry.insert(QStringLiteral("motions"), motionNames.join(QStringLiteral(" / ")));
+        entry.insert(QStringLiteral("indices"), indices);
+        if (region.hasAnchor) {
+            entry.insert(QStringLiteral("anchor"), QVariant::fromValue(region.anchorLocal));
+        }
+        labels.append(entry);
+    }
+
+    return labels;
+}
+
+void ArmWorkspace::updateResponsiveLayout() {
+    if (rootLayout_ == nullptr || brainCard_ == nullptr || controlScroll_ == nullptr) {
+        return;
+    }
+
+    const bool stacked = width() < kWideBreakpoint;
+    const int pad = stacked ? 12 : (width() < 1280 ? 18 : 28);
+    const int gap = stacked ? 12 : (width() < 1280 ? 20 : 28);
+    rootLayout_->setContentsMargins(pad, pad, pad, pad);
+    rootLayout_->setSpacing(gap);
+
+    stackedLayout_ = stacked;
+
+    if (stacked) {
+        rootLayout_->setDirection(QBoxLayout::TopToBottom);
+        rootLayout_->setStretch(0, 3);
+        rootLayout_->setStretch(1, 2);
+        brainCard_->setMinimumHeight(kBrainMinHeightStacked);
+        brainCard_->setMaximumWidth(QWIDGETSIZE_MAX);
+        controlScroll_->setMinimumWidth(0);
+        controlScroll_->setMaximumWidth(QWIDGETSIZE_MAX);
+        controlScroll_->setMinimumHeight(180);
+        controlScroll_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        if (controlColumn_ != nullptr) {
+            controlColumn_->setMinimumWidth(0);
+            controlColumn_->setMaximumWidth(QWIDGETSIZE_MAX);
+        }
+        if (learnScroll_ != nullptr) {
+            learnScroll_->setMaximumHeight(120);
+        }
+    } else {
+        rootLayout_->setDirection(QBoxLayout::LeftToRight);
+        // Give the control column a real share of wide windows instead of
+        // capping it and leaving empty gutter space.
+        rootLayout_->setStretch(0, 5);
+        rootLayout_->setStretch(1, 4);
+        brainCard_->setMinimumHeight(0);
+        brainCard_->setMaximumWidth(QWIDGETSIZE_MAX);
+
+        const int available = qMax(0, width() - pad * 2 - gap);
+        const int controlTarget = qBound(340, (available * 4) / 9, kControlColumnMaxWidthWide);
+        controlScroll_->setMinimumWidth(controlTarget);
+        controlScroll_->setMaximumWidth(controlTarget);
+        controlScroll_->setMinimumHeight(0);
+        controlScroll_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+        if (controlColumn_ != nullptr) {
+            controlColumn_->setMinimumWidth(controlTarget - 8);
+            controlColumn_->setMaximumWidth(QWIDGETSIZE_MAX);
+        }
+        if (learnScroll_ != nullptr) {
+            learnScroll_->setMaximumHeight(QWIDGETSIZE_MAX);
+        }
+        if (controlColumnLayout_ != nullptr) {
+            controlColumnLayout_->setSpacing(width() >= 1400 ? 18 : 14);
+        }
+    }
+}
+
+void ArmWorkspace::connectToArm() {
+    if (arm_ == nullptr || hostEdit_ == nullptr || connectButton_ == nullptr) {
+        return;
+    }
+    if (!modeButton_->isChecked()) {
+        return;
+    }
+    if (arm_->link() == RoArmController::Link::Probing) {
+        return;
+    }
+
+    const QString host = hostEdit_->text().trimmed();
+    if (host.isEmpty()) {
+        statusText_->setText(QStringLiteral("Enter an arm address first"));
+        hostEdit_->setFocus(Qt::OtherFocusReason);
+        return;
+    }
+
+    arm_->setHost(host);
+    connectButton_->setEnabled(false);
+    connectButton_->setText(QStringLiteral("Connecting…"));
+    arm_->probe();
+}
+
 void ArmWorkspace::beginMotion(const MotionCommand& command) {
     setActiveRegion(command.regionId);
-    // Keep the region lit while the button is held; one-shot commands have no
-    // release, so their dwell countdown starts immediately.
     if (command.oneShot) {
         highlightClearTimer_->start();
     } else {
@@ -351,16 +551,15 @@ void ArmWorkspace::setActiveRegion(const QString& regionId) {
         return;
     }
 
+    brainView_->setActiveRegionId(regionId);
     brainView_->setHighlightIndices(region->modelIndices);
     regionTitle_->setText(region->label);
-    regionDetail_->setText(region->description);
 }
 
 void ArmWorkspace::clearActiveRegion() {
     activeRegionId_.clear();
     brainView_->clearHighlight();
     regionTitle_->setText(QLatin1String(kIdleRegionTitle));
-    regionDetail_->setText(QLatin1String(kIdleRegionDetail));
 }
 
 void ArmWorkspace::showCard(int index) {
@@ -378,7 +577,7 @@ void ArmWorkspace::showCard(int index) {
 void ArmWorkspace::advanceCard(int delta) {
     showCard(cardIndex_ + delta);
     if (cardTimer_ != nullptr) {
-        cardTimer_->start(); // restart the dwell timer after any change
+        cardTimer_->start();
     }
 }
 
@@ -387,7 +586,12 @@ void ArmWorkspace::onModeToggled() {
     modeButton_->setText(live ? QStringLiteral("Live") : QStringLiteral("Simulation"));
     hostEdit_->setEnabled(live);
     connectButton_->setEnabled(live);
+    connectButton_->setText(QStringLiteral("Connect"));
     arm_->setMode(live ? RoArmController::Mode::Live : RoArmController::Mode::Simulation);
+    if (live) {
+        hostEdit_->setFocus(Qt::OtherFocusReason);
+        hostEdit_->selectAll();
+    }
 }
 
 void ArmWorkspace::onLinkChanged(RoArmController::Link link, const QString& message) {
@@ -414,6 +618,40 @@ void ArmWorkspace::onLinkChanged(RoArmController::Link link, const QString& mess
     if (statusText_ != nullptr) {
         statusText_->setText(message);
     }
+
+    const bool live = modeButton_ != nullptr && modeButton_->isChecked();
+    if (connectButton_ != nullptr) {
+        const bool probing = link == RoArmController::Link::Probing;
+        connectButton_->setEnabled(live && !probing);
+        if (probing) {
+            connectButton_->setText(QStringLiteral("Connecting…"));
+        } else if (link == RoArmController::Link::Connected) {
+            connectButton_->setText(QStringLiteral("Reconnect"));
+        } else {
+            connectButton_->setText(QStringLiteral("Connect"));
+        }
+    }
+}
+
+void ArmWorkspace::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    updateResponsiveLayout();
+    layoutBrainBorder();
+}
+
+bool ArmWorkspace::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == brainCard_ && event->type() == QEvent::Resize) {
+        layoutBrainBorder();
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+void ArmWorkspace::layoutBrainBorder() {
+    if (brainBorder_ == nullptr || brainCard_ == nullptr) {
+        return;
+    }
+    brainBorder_->setGeometry(brainCard_->rect());
+    brainBorder_->raise();
 }
 
 void ArmWorkspace::applyTheme() {
@@ -423,30 +661,30 @@ void ArmWorkspace::applyTheme() {
     const QString subtle = colors.backgroundSubtle.name(QColor::HexRgb);
     const QString fg = colors.foreground.name(QColor::HexRgb);
     const QString muted = colors.foregroundMuted.name(QColor::HexRgb);
-    const QString border = colors.border.name(QColor::HexArgb);
+    const QString border = colors.border.name(QColor::HexRgb);
     const QString accent = colors.accent.name(QColor::HexRgb);
     const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
+    const QString accentFg = colors.accentForeground.name(QColor::HexRgb);
 
     setStyleSheet(QStringLiteral(R"(
         QWidget#arm-workspace { background-color: %1; }
         QFrame#brain-card {
             background-color: %2;
-            border: 1px solid %5;
+            border: none;
             border-radius: 16px;
         }
         QWidget#brain-readout {
             background-color: %3;
+            border: none;
             border-top: 1px solid %5;
             border-bottom-left-radius: 16px;
             border-bottom-right-radius: 16px;
         }
-        QLabel#readout-eyebrow { color: %7; }
         QLabel#readout-title { color: %4; }
-        QLabel#readout-detail { color: %6; }
         QFrame#panel-card {
             background-color: %2;
             border: 1px solid %5;
-            border-radius: 14px;
+            border-radius: 12px;
         }
         QLabel#panel-heading { color: %4; }
         QLabel#group-label { color: %6; }
@@ -454,12 +692,30 @@ void ArmWorkspace::applyTheme() {
         QLabel#status-text { color: %4; }
         QLabel#card-category { color: %8; }
         QLabel#card-title { color: %4; }
-        QLabel#card-body { color: %6; }
+        QLabel#card-body { color: %6; background: transparent; }
+        QScrollArea#control-scroll,
+        QScrollArea#learn-scroll {
+            background: transparent;
+            border: none;
+        }
+        QScrollArea#control-scroll > QWidget > QWidget,
+        QScrollArea#learn-scroll > QWidget > QWidget { background: transparent; }
+        QScrollBar:vertical {
+            background: transparent;
+            width: 8px;
+            margin: 0;
+        }
+        QScrollBar::handle:vertical {
+            background: %5;
+            border-radius: 4px;
+            min-height: 24px;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
         QPushButton#motion-button {
             background-color: %3;
             color: %4;
             border: 1px solid %5;
-            border-radius: 10px;
+            border-radius: 9px;
             padding: 0 8px;
         }
         QPushButton#motion-button:hover { border-color: %8; color: %8; }
@@ -469,19 +725,40 @@ void ArmWorkspace::applyTheme() {
             color: %4;
             border: 1px solid %5;
             border-radius: 8px;
-            padding: 6px 10px;
+            padding: 5px 10px;
+            selection-background-color: %8;
         }
+        QLineEdit#host-edit:focus { border-color: %8; }
         QLineEdit#host-edit:disabled { color: %7; }
-        QPushButton#mode-button, QPushButton#connect-button, QPushButton#card-nav {
+        QPushButton#mode-button, QPushButton#card-nav {
             background-color: %3;
             color: %4;
             border: 1px solid %5;
             border-radius: 8px;
-            padding: 6px 14px;
+            padding: 5px 12px;
         }
         QPushButton#mode-button:checked { background-color: %9; color: %8; border-color: %8; }
-        QPushButton#connect-button:hover, QPushButton#card-nav:hover { border-color: %8; color: %8; }
-        QPushButton#connect-button:disabled { color: %7; }
+        QPushButton#connect-button {
+            background-color: %8;
+            color: %10;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 12px;
+            min-width: 88px;
+        }
+        QPushButton#connect-button:hover { background-color: %11; }
+        QPushButton#connect-button:disabled {
+            background-color: %3;
+            color: %7;
+            border: 1px solid %5;
+        }
+        QPushButton#card-nav:hover { border-color: %8; color: %8; }
     )")
-        .arg(bg, elevated, subtle, fg, border, muted, muted, accent, accentSubtle));
+        .arg(bg, elevated, subtle, fg, border, muted, muted, accent, accentSubtle)
+        .arg(accentFg, colors.accentStrong.name(QColor::HexRgb)));
+
+    if (brainBorder_ != nullptr) {
+        brainBorder_->setBorderColor(colors.border);
+        layoutBrainBorder();
+    }
 }

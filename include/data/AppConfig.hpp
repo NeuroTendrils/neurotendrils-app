@@ -22,6 +22,9 @@ struct BrainRegion {
     // order). Qt's RuntimeLoader does not expose node names, so the brain scene
     // highlights meshes by index instead.
     QVector<int> modelIndices;
+    // Preferred-hemisphere AABB center in model space (for floating labels).
+    QVector3D anchorLocal;
+    bool hasAnchor = false;
 };
 
 struct MotionCommand {

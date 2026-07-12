@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(NT_QT_COMPONENTS Widgets Network Quick Quick3D QuickWidgets)
+set(NT_QT_COMPONENTS Widgets Network Quick Quick3D QuickWidgets Svg)
 
 if(DEFINED ENV{QT_ROOT_DIR})
     list(PREPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
@@ -65,6 +65,7 @@ target_link_libraries(NeuroTendrils PRIVATE
     Qt6::Quick
     Qt6::Quick3D
     Qt6::QuickWidgets
+    Qt6::Svg
 )
 
 # Embed QML plugin imports so Quick3D works without macdeployqt/windeployqt
@@ -83,6 +84,11 @@ set_target_properties(NeuroTendrils PROPERTIES
     MACOSX_BUNDLE_BUNDLE_NAME "NeuroTendrils"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.neurotendrils.app"
 )
+
+if(WIN32)
+    target_sources(NeuroTendrils PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/NeuroTendrils.rc")
+endif()
 
 if(APPLE)
     set(app_icon "${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/AppIcon.icns")

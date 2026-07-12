@@ -91,6 +91,8 @@ void BrainView::ensureSceneLoaded() {
         initial.insert(QStringLiteral("modelCenter"), modelCenter_);
         initial.insert(QStringLiteral("modelSize"), modelSize_);
     }
+    initial.insert(QStringLiteral("regionLabels"), regionLabels_);
+    initial.insert(QStringLiteral("activeRegionId"), activeRegionId_);
     quickWidget_->setInitialProperties(initial);
     quickWidget_->setSource(QUrl(QStringLiteral("qrc:/qml/BrainScene.qml")));
 }
@@ -118,8 +120,6 @@ void BrainView::onQuickStatusChanged() {
     applySceneProperties();
     applyTheme();
 
-    // RuntimeLoader finishes after the QML document is Ready — poll until the
-    // scene reports ready or surfaces an import error.
     auto* poll = new QTimer(this);
     poll->setInterval(100);
     connect(poll, &QTimer::timeout, this, [this, poll]() {
@@ -155,12 +155,23 @@ void BrainView::setModelBounds(const QVector3D& minimum, const QVector3D& maximu
     applySceneProperties();
 }
 
+void BrainView::setRegionLabels(const QVariantList& labels) {
+    regionLabels_ = labels;
+    applySceneProperties();
+}
+
+void BrainView::setActiveRegionId(const QString& regionId) {
+    activeRegionId_ = regionId;
+    applySceneProperties();
+}
+
 void BrainView::setHighlightIndices(const QVector<int>& modelIndices) {
     highlightIndices_ = modelIndices;
     applySceneProperties();
 }
 
 void BrainView::clearHighlight() {
+    setActiveRegionId({});
     setHighlightIndices({});
 }
 
@@ -186,11 +197,14 @@ void BrainView::applySceneProperties() {
         indices.append(index);
     }
     scene->setProperty("highlightIndices", indices);
+    scene->setProperty("regionLabels", regionLabels_);
+    scene->setProperty("activeRegionId", activeRegionId_);
 }
 
 void BrainView::applyTheme() {
     const ColorPalette colors = themeManager_.palette();
-    const QColor cortex = themeManager_.effectiveTheme() == Theme::Dark
+    const bool dark = themeManager_.effectiveTheme() == Theme::Dark;
+    const QColor cortex = dark
         ? QColor(QStringLiteral("#7a756c"))
         : QColor(QStringLiteral("#b5aea0"));
 
@@ -211,4 +225,10 @@ void BrainView::applyTheme() {
     scene->setProperty("backgroundColor", colors.backgroundElevated);
     scene->setProperty("baseColor", cortex);
     scene->setProperty("glowColor", colors.accent);
+    scene->setProperty("labelCardBackground", dark
+        ? QColor(18, 23, 42, 245)
+        : QColor(255, 255, 255, 245));
+    scene->setProperty("labelCardBorder", colors.border);
+    scene->setProperty("labelCardTitle", colors.foreground);
+    scene->setProperty("labelCardBody", colors.foregroundMuted);
 }

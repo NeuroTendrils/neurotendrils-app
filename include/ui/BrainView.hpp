@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QUrl>
+#include <QVariantList>
 #include <QVector>
 #include <QVector3D>
 #include <QWidget>
@@ -22,6 +23,8 @@ public:
     explicit BrainView(ThemeManager& themeManager, QWidget* parent = nullptr);
 
     void setModelBounds(const QVector3D& minimum, const QVector3D& maximum);
+    void setRegionLabels(const QVariantList& labels);
+    void setActiveRegionId(const QString& regionId);
     void setHighlightIndices(const QVector<int>& modelIndices);
     void clearHighlight();
 
@@ -48,4 +51,6 @@ private:
     float modelSize_ = 0.181F;
     bool hasBounds_ = true;
     QVector<int> highlightIndices_;
+    QVariantList regionLabels_;
+    QString activeRegionId_;
 };

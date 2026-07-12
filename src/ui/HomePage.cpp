@@ -9,14 +9,16 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QtGlobal>
 
 namespace {
 
-constexpr int kWordmarkMinPointSize = 56;
+constexpr int kWordmarkMinPointSize = 48;
 constexpr int kWordmarkMaxPointSize = 120;
-constexpr int kNavButtonWidth = 320;
+constexpr int kNavButtonMinWidth = 240;
+constexpr int kNavButtonMaxWidth = 320;
 constexpr int kNavButtonHeight = 56;
 constexpr int kNavButtonSpacing = 16;
 
@@ -25,7 +27,10 @@ constexpr int kWordmarkToButtonsSpacing = 48;
 QPushButton* createNavButton(const QString& label, const QString& description, QWidget* parent) {
     auto* button = new QPushButton(label, parent);
     button->setObjectName(QStringLiteral("nav-button"));
-    button->setFixedSize(kNavButtonWidth, kNavButtonHeight);
+    button->setMinimumSize(kNavButtonMinWidth, kNavButtonHeight);
+    button->setMaximumWidth(kNavButtonMaxWidth);
+    button->setFixedHeight(kNavButtonHeight);
+    button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     button->setCursor(Qt::PointingHandCursor);
     button->setFont(AppFonts::semibold(16));
     button->setAccessibleName(label);
@@ -50,7 +55,7 @@ HomePage::HomePage(ThemeManager& themeManager, QWidget* parent)
 
 void HomePage::buildUi() {
     auto* rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(48, 48, 48, 64);
+    rootLayout->setContentsMargins(32, 32, 32, 48);
     rootLayout->setSpacing(0);
 
     rootLayout->addStretch(4);
@@ -92,9 +97,18 @@ void HomePage::buildUi() {
         QStringLiteral("Explore the brain-computer interface and control the arm."),
         this);
 
-    buttonColumn->addWidget(roboticArmButton_, 0, Qt::AlignHCenter);
-    buttonColumn->addWidget(eegToTextButton_, 0, Qt::AlignHCenter);
-    buttonColumn->addWidget(educationButton_, 0, Qt::AlignHCenter);
+    // Keep buttons centered but able to shrink with the window.
+    auto* buttonWrap = new QWidget(this);
+    buttonWrap->setMaximumWidth(kNavButtonMaxWidth);
+    buttonWrap->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto* wrapLayout = new QVBoxLayout(buttonWrap);
+    wrapLayout->setContentsMargins(0, 0, 0, 0);
+    wrapLayout->setSpacing(kNavButtonSpacing);
+    wrapLayout->addWidget(roboticArmButton_);
+    wrapLayout->addWidget(eegToTextButton_);
+    wrapLayout->addWidget(educationButton_);
+
+    buttonColumn->addWidget(buttonWrap, 0, Qt::AlignHCenter);
 
     connect(roboticArmButton_, &QPushButton::clicked, this, &HomePage::roboticArmRequested);
     connect(eegToTextButton_, &QPushButton::clicked, this, &HomePage::eegToTextRequested);
@@ -136,7 +150,7 @@ QString HomePage::navButtonStylesheet() const {
     const ColorPalette colors = themeManager_.palette();
     const QString elevated = colors.backgroundElevated.name(QColor::HexRgb);
     const QString foreground = colors.foreground.name(QColor::HexRgb);
-    const QString border = colors.border.name(QColor::HexArgb);
+    const QString border = colors.border.name(QColor::HexRgb);
     const QString accent = colors.accent.name(QColor::HexRgb);
     const QString accentSubtle = colors.accentSubtle.name(QColor::HexArgb);
     const QString accentStrong = colors.accentStrong.name(QColor::HexRgb);
@@ -161,7 +175,9 @@ QString HomePage::navButtonStylesheet() const {
                "}"
                "QPushButton#nav-button:focus {"
                "  border-color: %5;"
-               "  border-width: 2px;"
+               "}"
+               "QPushButton#nav-button:focus-visible {"
+               "  border-color: %5;"
                "}")
         .arg(elevated, foreground, border, accentSubtle, accent, accentStrong);
 }

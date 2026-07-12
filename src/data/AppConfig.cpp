@@ -92,10 +92,12 @@ void AppConfig::resolveModelIndices() {
     }
 
     QStringList meshNodeNames;
+    QVector<int> meshIndicesForNodes;
     std::function<void(int)> walk = [&](int nodeIndex) {
         const QJsonObject node = nodes.at(nodeIndex).toObject();
         if (node.contains(QStringLiteral("mesh"))) {
             meshNodeNames.append(node.value(QStringLiteral("name")).toString());
+            meshIndicesForNodes.append(node.value(QStringLiteral("mesh")).toInt());
         }
         const QJsonArray children = node.value(QStringLiteral("children")).toArray();
         for (const QJsonValue& child : children) {
@@ -124,12 +126,14 @@ void AppConfig::resolveModelIndices() {
     // glTF requires min/max on POSITION accessors, which survive Draco decoding.
     const QJsonArray accessors = root.value(QStringLiteral("accessors")).toArray();
     const QJsonArray meshes = root.value(QStringLiteral("meshes")).toArray();
-    QVector3D lo(1e9F, 1e9F, 1e9F);
-    QVector3D hi(-1e9F, -1e9F, -1e9F);
-    bool any = false;
 
-    for (const QJsonValue& meshValue : meshes) {
-        const QJsonArray primitives = meshValue.toObject().value(QStringLiteral("primitives")).toArray();
+    auto expandMeshBounds = [&](int meshIndex, QVector3D* lo, QVector3D* hi) -> bool {
+        if (meshIndex < 0 || meshIndex >= meshes.size()) {
+            return false;
+        }
+        bool found = false;
+        const QJsonArray primitives =
+            meshes.at(meshIndex).toObject().value(QStringLiteral("primitives")).toArray();
         for (const QJsonValue& primValue : primitives) {
             const QJsonObject attributes =
                 primValue.toObject().value(QStringLiteral("attributes")).toObject();
@@ -146,19 +150,66 @@ void AppConfig::resolveModelIndices() {
             if (mn.size() != 3 || mx.size() != 3) {
                 continue;
             }
-            lo.setX(qMin(lo.x(), static_cast<float>(mn.at(0).toDouble())));
-            lo.setY(qMin(lo.y(), static_cast<float>(mn.at(1).toDouble())));
-            lo.setZ(qMin(lo.z(), static_cast<float>(mn.at(2).toDouble())));
-            hi.setX(qMax(hi.x(), static_cast<float>(mx.at(0).toDouble())));
-            hi.setY(qMax(hi.y(), static_cast<float>(mx.at(1).toDouble())));
-            hi.setZ(qMax(hi.z(), static_cast<float>(mx.at(2).toDouble())));
+            lo->setX(qMin(lo->x(), static_cast<float>(mn.at(0).toDouble())));
+            lo->setY(qMin(lo->y(), static_cast<float>(mn.at(1).toDouble())));
+            lo->setZ(qMin(lo->z(), static_cast<float>(mn.at(2).toDouble())));
+            hi->setX(qMax(hi->x(), static_cast<float>(mx.at(0).toDouble())));
+            hi->setY(qMax(hi->y(), static_cast<float>(mx.at(1).toDouble())));
+            hi->setZ(qMax(hi->z(), static_cast<float>(mx.at(2).toDouble())));
+            found = true;
+        }
+        return found;
+    };
+
+    QVector3D lo(1e9F, 1e9F, 1e9F);
+    QVector3D hi(-1e9F, -1e9F, -1e9F);
+    bool any = false;
+    for (int meshIndex = 0; meshIndex < meshes.size(); ++meshIndex) {
+        if (expandMeshBounds(meshIndex, &lo, &hi)) {
             any = true;
         }
     }
-
     if (any) {
         modelMin_ = lo;
         modelMax_ = hi;
+    }
+
+    // Prefer one hemisphere so label pins sit on cortex, not the midline.
+    for (BrainRegion& region : regions_) {
+        QVector<int> aimIndices;
+        for (int index : region.modelIndices) {
+            if (index >= 0 && index < meshNodeNames.size()
+                && meshNodeNames.at(index).contains(QStringLiteral(".l"))) {
+                aimIndices.append(index);
+            }
+        }
+        if (aimIndices.isEmpty()) {
+            for (int index : region.modelIndices) {
+                if (index >= 0 && index < meshNodeNames.size()
+                    && meshNodeNames.at(index).contains(QStringLiteral(".r"))) {
+                    aimIndices.append(index);
+                }
+            }
+        }
+        if (aimIndices.isEmpty()) {
+            aimIndices = region.modelIndices;
+        }
+
+        QVector3D regionLo(1e9F, 1e9F, 1e9F);
+        QVector3D regionHi(-1e9F, -1e9F, -1e9F);
+        bool regionAny = false;
+        for (int index : aimIndices) {
+            if (index < 0 || index >= meshIndicesForNodes.size()) {
+                continue;
+            }
+            if (expandMeshBounds(meshIndicesForNodes.at(index), &regionLo, &regionHi)) {
+                regionAny = true;
+            }
+        }
+        if (regionAny) {
+            region.anchorLocal = (regionLo + regionHi) * 0.5F;
+            region.hasAnchor = true;
+        }
     }
 }
 
