@@ -94,7 +94,7 @@ jobs:
           $exe = Get-ChildItem -Path build -Recurse -Filter "NeuroTendrils.exe" | Select-Object -First 1
           $dir = $exe.Directory.FullName
           # Ensure the atlas sits next to the exe (POST_BUILD should already copy it).
-          New-Item -ItemType Directory -Force -Path "$dir\resources" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$dir\resources\eeg" | Out-Null
           Copy-Item -Force "assets\brain\brain.glb" "$dir\resources\brain.glb"
           Copy-Item -Recurse -Force "assets\eeg\v2" "$dir\resources\eeg\v2"
           # ONNX Runtime DLL is copied beside the exe by CMake POST_BUILD; ensure it is present.
@@ -235,7 +235,7 @@ jobs:
             --plugin qt
 
           # Brain atlas + EEG replay bundle ship beside the binary.
-          mkdir -p AppDir/usr/bin/resources
+          mkdir -p AppDir/usr/bin/resources/eeg
           cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
           cp -R assets/eeg/v2 AppDir/usr/bin/resources/eeg/v2
 
@@ -320,7 +320,7 @@ jobs:
             --plugin qt
 
           # Brain atlas + EEG replay bundle ship beside the binary.
-          mkdir -p AppDir/usr/bin/resources
+          mkdir -p AppDir/usr/bin/resources/eeg
           cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
           cp -R assets/eeg/v2 AppDir/usr/bin/resources/eeg/v2
 
