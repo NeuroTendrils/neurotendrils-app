@@ -9,6 +9,10 @@
 #include "ui/SettingsOverlay.hpp"
 #include "ui/WipPage.hpp"
 
+#if defined(NT_ENABLE_EEG)
+#include "ui/RoboticArmPage.hpp"
+#endif
+
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QPushButton>
@@ -74,10 +78,13 @@ MainWindow::MainWindow(ThemeManager& themeManager, const AppConfig& config, QWid
     content_->addWidget(educationPage_);
     content_->addWidget(wipPage_);
 
+#if defined(NT_ENABLE_EEG)
+    roboticArmPage_ = new RoboticArmPage(themeManager_, config_, shell_);
+    content_->addWidget(roboticArmPage_);
+#endif
+
     connect(homePage_, &HomePage::educationRequested, this, &MainWindow::showEducation);
-    connect(homePage_, &HomePage::roboticArmRequested, this, [this]() {
-        showWip(QStringLiteral("Robotic Arm"));
-    });
+    connect(homePage_, &HomePage::roboticArmRequested, this, &MainWindow::showRoboticArm);
     connect(homePage_, &HomePage::eegToTextRequested, this, [this]() {
         showWip(QStringLiteral("EEG-to-Text"));
     });
@@ -100,6 +107,15 @@ void MainWindow::showHome() {
 void MainWindow::showEducation() {
     content_->setCurrentWidget(educationPage_);
     backButton_->show();
+}
+
+void MainWindow::showRoboticArm() {
+#if defined(NT_ENABLE_EEG)
+    content_->setCurrentWidget(roboticArmPage_);
+    backButton_->show();
+#else
+    showWip(QStringLiteral("Robotic Arm"));
+#endif
 }
 
 void MainWindow::showWip(const QString& featureName) {

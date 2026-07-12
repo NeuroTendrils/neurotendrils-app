@@ -245,7 +245,7 @@ QWidget* ArmWorkspace::buildConnectionBar() {
     connect(hostEdit_, &QLineEdit::textEdited, this, [this](const QString&) {
         if (modeButton_ != nullptr && modeButton_->isChecked()
             && arm_ != nullptr && arm_->link() == RoArmController::Link::Connected) {
-            statusText_->setText(QStringLiteral("Address changed — press Connect"));
+            statusText_->setText(QStringLiteral("Address changed; press Connect"));
             connectButton_->setText(QStringLiteral("Connect"));
         }
     });
@@ -375,7 +375,7 @@ QWidget* ArmWorkspace::buildLearningCard() {
     learnScroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     learnScroll_->setWidget(cardBody_);
     learnScroll_->setMinimumHeight(72);
-    // No max height — Learn expands to fill leftover column space on large windows.
+    // No max height; Learn expands to fill leftover column space on large windows.
 
     auto* navRow = new QHBoxLayout();
     navRow->setSpacing(8);

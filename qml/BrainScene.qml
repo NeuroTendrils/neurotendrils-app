@@ -32,7 +32,7 @@ Item {
 
     property var _models: []
     property var _labelLayouts: []
-    // "full" | "compact" | "hidden" — driven by viewport size in _layoutLabels.
+    // "full" | "compact" | "hidden"; driven by viewport size in _layoutLabels.
     property string labelMode: "full"
 
     Rectangle {
@@ -181,7 +181,7 @@ Item {
     }
 
     // Screen-space label overlay (cards + pins + leader lines).
-    // Hidden entirely on small viewports — the status bar under the brain
+    // Hidden entirely on small viewports; the status bar under the brain
     // carries the active-region copy instead of orphan pins.
     Item {
         id: labelsLayer

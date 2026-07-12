@@ -5,6 +5,7 @@
 class AppConfig;
 class EducationPage;
 class HomePage;
+class RoboticArmPage;
 class SettingsMenu;
 class SettingsOverlay;
 class ThemeManager;
@@ -28,6 +29,7 @@ private:
     void layoutOverlay();
     void showHome();
     void showEducation();
+    void showRoboticArm();
     void showWip(const QString& featureName);
 
     ThemeManager& themeManager_;
@@ -38,6 +40,7 @@ private:
     QStackedWidget* content_ = nullptr;
     HomePage* homePage_ = nullptr;
     EducationPage* educationPage_ = nullptr;
+    RoboticArmPage* roboticArmPage_ = nullptr;
     WipPage* wipPage_ = nullptr;
     SettingsMenu* settingsMenu_ = nullptr;
     SettingsOverlay* settingsOverlay_ = nullptr;

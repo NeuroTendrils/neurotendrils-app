@@ -6,33 +6,52 @@
 
 namespace AppPaths {
 
+namespace {
+
+QString firstExistingFile(const QStringList& candidates) {
+    for (const QString& path : candidates) {
+        if (path.isEmpty()) {
+            continue;
+        }
+        const QFileInfo info(path);
+        if (info.isFile()) {
+            return info.absoluteFilePath();
+        }
+    }
+    return {};
+}
+
+} // namespace
+
 QString brainModelFile() {
     const QString appDir = QCoreApplication::applicationDirPath();
+    QStringList candidates;
 
-#if defined(Q_OS_MACOS)
-    const QString bundled = QDir(appDir).absoluteFilePath(QStringLiteral("../Resources/brain.glb"));
-#else
-    const QString bundled = QDir(appDir).absoluteFilePath(QStringLiteral("resources/brain.glb"));
-#endif
+    // Staged install layouts (POST_BUILD / packagers).
+    candidates.append(QDir(appDir).absoluteFilePath(QStringLiteral("resources/brain.glb")));
+    candidates.append(QDir(appDir).absoluteFilePath(QStringLiteral("../Resources/brain.glb"))); // macOS .app
+    candidates.append(QDir(appDir).absoluteFilePath(QStringLiteral("../share/neurotendrils/brain.glb")));
 
-    if (QFileInfo::exists(bundled)) {
-        return QFileInfo(bundled).absoluteFilePath();
+    // Dev builds: walk up from the binary toward the source tree.
+    const QStringList relativeDev = {
+        QStringLiteral("assets/brain/brain.glb"),
+        QStringLiteral("../assets/brain/brain.glb"),
+        QStringLiteral("../../assets/brain/brain.glb"),
+        QStringLiteral("../../../assets/brain/brain.glb"),
+        QStringLiteral("../../../../assets/brain/brain.glb"),
+        QStringLiteral("../../../../../assets/brain/brain.glb"),
+    };
+    for (const QString& relative : relativeDev) {
+        candidates.append(QDir(appDir).absoluteFilePath(relative));
     }
 
-    // Dev fallback: running from a build tree without the install step.
-#if defined(Q_OS_MACOS)
-    // .../NeuroTendrils.app/Contents/MacOS → repo root is four levels up.
-    const QString sourceTree = QDir(appDir).absoluteFilePath(
-        QStringLiteral("../../../../assets/brain/brain.glb"));
-#else
-    const QString sourceTree = QDir(appDir).absoluteFilePath(
-        QStringLiteral("../../assets/brain/brain.glb"));
-#endif
-    if (QFileInfo::exists(sourceTree)) {
-        return QFileInfo(sourceTree).absoluteFilePath();
+    const QString found = firstExistingFile(candidates);
+    if (!found.isEmpty()) {
+        return found;
     }
 
-    return bundled;
+    // Prefer the staged path in error messages even if missing.
+    return candidates.constFirst();
 }
 
 } // namespace AppPaths

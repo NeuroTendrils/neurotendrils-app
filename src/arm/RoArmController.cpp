@@ -44,7 +44,7 @@ void RoArmController::setMode(Mode mode) {
     if (mode_ == Mode::Simulation) {
         setLink(Link::Simulated, QStringLiteral("Simulation mode"));
     } else {
-        // Stay Offline until the user presses Connect — editing the IP first
+        // Stay Offline until the user presses Connect; editing the IP first
         // is the common path when switching to Live.
         setLink(Link::Offline, QStringLiteral("Enter the arm address and press Connect"));
     }

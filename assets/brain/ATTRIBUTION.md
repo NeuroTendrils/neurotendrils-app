@@ -3,6 +3,7 @@
 - **Project:** [brainproject](https://github.com/itayinbarr/brainproject) (Z-Anatomy / BodyParts3D)
 - **License:** CC BY-SA 4.0
 - **Files:** `assets/brain`
+- Z-Anatomy, built on BodyParts3D, © The Database Center for Life Science (DBCLS).
 
 Education regions map to named cortical meshes in `brain_regions.json`.
 
@@ -24,4 +25,4 @@ The bundled `brain.glb` is a derivative of the brainproject atlas, modified as f
    and node names are otherwise unchanged.
 
 Per CC BY-SA 4.0, these changes are indicated here and the model remains under
-the same license.
+the same license. 

@@ -15,7 +15,7 @@ ColorPalette ColorPalette::forTheme(Theme theme) {
         palette.accentStrong = palette.brandPurple;
         palette.accentForeground = QColor(QStringLiteral("#ffffff"));
         palette.accentSubtle = QColor(43, 89, 195, 20); // ~8% alpha
-        // Solid border — translucent HexArgb borders AA unevenly on HiDPI.
+        // Solid border; translucent HexArgb borders AA unevenly on HiDPI.
         palette.border = QColor(QStringLiteral("#d8dde8"));
         return palette;
     }

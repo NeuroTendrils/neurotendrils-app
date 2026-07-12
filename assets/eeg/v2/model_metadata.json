@@ -1,0 +1,38 @@
+{
+    "n_chans": 22,
+    "n_times": 1000,
+    "sfreq": 250.0,
+    "n_classes": 4,
+    "class_names": [
+        "left_hand",
+        "right_hand",
+        "feet",
+        "tongue"
+    ],
+    "preprocessing": {
+        "multiply_factor": 1000000.0,
+        "low_cut_hz": 7.0,
+        "high_cut_hz": 30.0,
+        "standardize_factor_new": 0.001,
+        "standardize_init_block_size": 1000,
+        "standardize_eps": 0.0001,
+        "filter_method": "fir",
+        "filter_phase": "zero"
+    },
+    "onnx": {
+        "model_file": "model.onnx",
+        "external_data_file": "model.onnx.data",
+        "input_name": "x",
+        "output_name": "linear",
+        "input_layout": "NCT",
+        "input_shape": [
+            1,
+            22,
+            1000
+        ],
+        "output_shape": [
+            1,
+            4
+        ]
+    }
+}

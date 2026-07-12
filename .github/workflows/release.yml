@@ -94,6 +94,12 @@ jobs:
           # Ensure the atlas sits next to the exe (POST_BUILD should already copy it).
           New-Item -ItemType Directory -Force -Path "$dir\resources" | Out-Null
           Copy-Item -Force "assets\brain\brain.glb" "$dir\resources\brain.glb"
+          Copy-Item -Recurse -Force "assets\eeg\v2" "$dir\resources\eeg\v2"
+          # ONNX Runtime DLL is copied beside the exe by CMake POST_BUILD; ensure it is present.
+          $ort = Get-ChildItem -Path build -Recurse -Filter "onnxruntime.dll" | Select-Object -First 1
+          if ($ort) {
+            Copy-Item -Force $ort.FullName "$dir\onnxruntime.dll"
+          }
           $archive = "NeuroTendrils-windows-x64-$version.zip"
           Compress-Archive -Path "$dir\*" -DestinationPath $archive
 
@@ -224,9 +230,10 @@ jobs:
             -i packaging/linux/NeuroTendrils.png \
             --plugin qt
 
-          # Brain atlas ships beside the binary (not embedded in the executable).
+          # Brain atlas + EEG replay bundle ship beside the binary.
           mkdir -p AppDir/usr/bin/resources
           cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
+          cp -R assets/eeg/v2 AppDir/usr/bin/resources/eeg/v2
 
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -307,9 +314,10 @@ jobs:
             -i packaging/linux/NeuroTendrils.png \
             --plugin qt
 
-          # Brain atlas ships beside the binary (not embedded in the executable).
+          # Brain atlas + EEG replay bundle ship beside the binary.
           mkdir -p AppDir/usr/bin/resources
           cp assets/brain/brain.glb AppDir/usr/bin/resources/brain.glb
+          cp -R assets/eeg/v2 AppDir/usr/bin/resources/eeg/v2
 
           ./linuxdeploy-aarch64.AppImage \
             --appdir AppDir \

@@ -5,7 +5,7 @@
 namespace AppPaths {
 
 // Absolute path to the staged brain model shipped beside the app
-// (macOS: Contents/Resources/brain.glb, other platforms: resources/brain.glb).
+// (resources/brain.glb, or Contents/Resources/brain.glb inside a macOS .app).
 QString brainModelFile();
 
 } // namespace AppPaths
